@@ -6,8 +6,10 @@ Add an entry for every meaningful change (see `AGENTS.md` → "Keeping the docs 
 ---
 
 ## 2026-10-27: Published on GitHub Pages
-**What:** Public repo `brandonconcepcion/pawse`, GitHub Pages from `main` / root → **https://brandonconcepcion.github.io/pawse/**.
-Added `.nojekyll` (serve files as-is) and `.gitignore`.
+**What:** Public repo `brandonconcepcion/pawse`, GitHub Pages from `main` / root. It's served on the owner's existing custom domain → **https://brandonconcepcion.com/pawse/**.
+Added `.nojekyll` (serve files as-is), `.gitignore`, and an http → https redirect in `index.html` (the domain
+doesn't enforce HTTPS, and the service worker and install need it). Commits use the GitHub noreply email so the
+owner's work email isn't public.
 **Notes:** All app paths are relative, so it works under `/pawse/`. Storage is per-origin: the owner's dogs at
 `localhost:8642` must be moved with SAVE BACKUP → LOAD BACKUP. Future deploys = push to `main`, and bump `CACHE`.
 
