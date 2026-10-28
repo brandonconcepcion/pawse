@@ -8,6 +8,7 @@ Add an entry for every meaningful change (see `AGENTS.md` → "Keeping the docs 
 ## 2026-10-27: Moved to brandonconcepcion.com/dogs
 **What:** Renamed the GitHub repo `pawse` → `dogs` so the site lives at **https://brandonconcepcion.com/dogs/**
 (GitHub Pages uses the repo name as the path). The app name stays Pawse; the local folder stays `~/Developer/pawse`.
+**Also:** the service worker now only deletes its own `pawse-*` caches, since the whole domain shares cache storage.
 **Notes:** The old `/pawse/` URL now 404s; it was only live for minutes. GitHub redirects git operations from the
 old repo name, but the local remote was updated anyway. All docs updated to the new URL.
 

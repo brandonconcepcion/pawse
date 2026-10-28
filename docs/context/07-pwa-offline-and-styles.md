@@ -7,7 +7,8 @@
 - `index.html`: iOS web-app meta tags, preloads both fonts, loads `js/app.js` as a module.
 - `sw.js` (service worker):
   - `install`: caches everything in `ASSETS` under `CACHE` (`pawse-vN`).
-  - `activate`: deletes old caches.
+  - `activate`: deletes old **`pawse-*`** caches only. The origin (brandonconcepcion.com) is shared with the
+    owner's other pages, so never delete caches you don't own.
   - `fetch`: **network first with `cache: 'no-cache'`** (always revalidate, so an update never mixes old and new
     modules), falling back to the cache when offline (then to `index.html`).
   - **When you add a file, list it in `ASSETS`. When you change anything, bump `CACHE`.**

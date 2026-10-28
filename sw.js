@@ -1,6 +1,6 @@
 // Lets Pawse open with no internet. Always tries the network first so updates show up right away,
 // and falls back to the cached copy when offline.
-const CACHE = 'pawse-v11';
+const CACHE = 'pawse-v12';
 const ASSETS = [
   './',
   './index.html',
@@ -30,7 +30,8 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))
+      // Only clear old Pawse caches: other sites on brandonconcepcion.com share this cache storage.
+      .then((keys) => Promise.all(keys.filter((key) => key.startsWith('pawse-') && key !== CACHE).map((key) => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });
