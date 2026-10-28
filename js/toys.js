@@ -747,9 +747,9 @@ export function plankURL() {
   return plank;
 }
 
-// Teddy's portrait for the wall: his photo shrunk to 28×28, white-balanced and snapped to the palette by
-// tools/make-portrait.py (the busy room behind him is faded to teal). One letter per color.
-const PORTRAIT = [
+// Portraits for the wall: the dogs' photos shrunk to 28×28, white-balanced and snapped to the palette by
+// tools/make-portrait.py (the busy room behind them is faded to teal). One letter per color. Teddy first:
+const TEDDY_PORTRAIT = [
   'gggggggggggggggggggggggggggg',
   'gggggggggggggggggggggggggggg',
   'ggggggggssssgngsgggggggggggg',
@@ -779,6 +779,37 @@ const PORTRAIT = [
   'wwwwwwwwcWcWStSttttttmmmdkng',
   'wwwwwwwccWWSStttttttsmdkkdng',
 ];
+// Cookie (--box 730,250,1480,1000 --ellipse 375,225,290,230 --ellipse 330,600,300,340 --gamma 0.5 --gains 1.25,1.22,1.14):
+const COOKIE_PORTRAIT = [
+  'ggggggggsstWSSWWSSllsggggggg',
+  'ggggggslSSWcwwwwccWSllgggggg',
+  'gggggllSWWccwwwwwwwcWSlggggg',
+  'ggggslSWWWcccccwwwwwcWSlgggg',
+  'gggslSWWWccWWWWWwwwwwwWlsggg',
+  'ggglSppWpcWStSSSSWWwwwcSlggg',
+  'ggglSppWWWSsmtSSSsscwwwWlsgg',
+  'ggstWppWWWStsSWccllWwwwcSsgg',
+  'ggstWppWWWWWWccwwwwcwwwcSlgg',
+  'ggstSWWSWWWcccccwwwwwwwcSsgg',
+  'ggglSWWWWWcWcWWSWwwwwwwWlggg',
+  'gggsSWWWWWWWWWtttWwwwwcSlggg',
+  'gggslWWWWWWWWStsstcwwcWlsggg',
+  'gggsSWWWWWWWWStttScwwWSlgggg',
+  'ggglSWWpWWWWWSSSWcwwcSlggggg',
+  'ggstWWpWWWWSSWWWcwwwcSlggggg',
+  'ggsSWWpWWWWSSSSSWwwwcSlggggg',
+  'gglWWWWWWWWSSSSSWwwwwWSsgggg',
+  'gsSWWWWWWWWSSSSSWwwwwcSlgggg',
+  'glSWWWWpWWWSSSSSWcwwwwSlgggg',
+  'glSWWWWWpWWWSWSSWcwwwwWlgggg',
+  'glSWWWWSWSSSWWWWWcwwwwWlgggg',
+  'slSWWWWSSSSSSWWWWwwwwcWlgggg',
+  'slSSWWSSStSSSSWcwccwwwWlgggg',
+  'glSSSWWSSSSSSSWcWWcwwwWlgggg',
+  'glStSWWSSStSSScWSScwwcSlgggg',
+  'gstttWWSSStSSSWSSScwwcSlgggg',
+  'gsttSWWSSSSSSSSSSScwwcSsgggg',
+];
 const PORTRAIT_COLORS = {
   k: C.black, n: C.navy, s: C.slate, S: C.silver, c: C.cream, w: '#FFFFFF', W: '#DCD3CA', t: C.taupe,
   d: C.darkBrown, m: C.mauve, p: C.peach, l: C.lavender, g: C.teal,
@@ -800,10 +831,11 @@ export function wallpaperURL() {
   return wallpaper;
 }
 
-let portrait;
-/** 36×36 framed portrait of Teddy that hangs on the toy-room wall (placed by the CSS, not tiled). */
-export function portraitURL() {
-  portrait ??= tileURL(36, 36, (ctx) => {
+const portraits = {};
+/** 36×36 framed portrait ('teddy' or 'cookie') that hangs on the toy-room wall (placed by the CSS, not tiled). */
+export function portraitURL(dog = 'teddy') {
+  const photo = dog === 'cookie' ? COOKIE_PORTRAIT : TEDDY_PORTRAIT;
+  portraits[dog] ??= tileURL(36, 36, (ctx) => {
     const fill = (color, x, y, w, h) => {
       ctx.fillStyle = color;
       ctx.fillRect(x, y, w, h);
@@ -813,7 +845,7 @@ export function portraitURL() {
     fill(C.tangerine, 1, 1, 34, 1); // lit top edge
     fill(C.rust, 1, 34, 34, 1); // shaded bottom edge
     fill(C.navy, 3, 3, 30, 30); // inner edge
-    PORTRAIT.forEach((row, y) => [...row].forEach((ch, x) => fill(PORTRAIT_COLORS[ch], 4 + x, 4 + y, 1, 1)));
+    photo.forEach((row, y) => [...row].forEach((ch, x) => fill(PORTRAIT_COLORS[ch], 4 + x, 4 + y, 1, 1)));
   });
-  return portrait;
+  return portraits[dog];
 }

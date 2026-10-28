@@ -5,6 +5,20 @@ Add an entry for every meaningful change (see `AGENTS.md` → "Keeping the docs 
 
 ---
 
+## 2026-10-28: Cookie portraits join Teddy's on the toy wall (8 portraits)
+**Why:** The owner sent a Cookie photo and wanted it pixelated into the wall too, going past the old five-portrait limit.
+**What:** `toys.js`: `PORTRAIT` is now `TEDDY_PORTRAIT`, plus a new `COOKIE_PORTRAIT`; `portraitURL(dog = 'teddy')`
+caches one framed 36×36 per dog. `app.js` sets `--portrait` and `--portrait-cookie`. `styles.css`: three Cookie portraits
+mixed in with Teddy's five (left 3% 25%, right 97% 5% and 94.5% 40%), at 72px / 108px, still only from 1260px wide.
+`tools/make-portrait.py` gained `--gamma` (lifts shadows): Cookie's photo is dim and cool, so her fur in shade read
+brown. Her crop: `--box 730,250,1480,1000 --ellipse 375,225,290,230 --ellipse 330,600,300,340 --size 28 --gamma 0.5
+--gains 1.25,1.22,1.14`. Cache is `pawse-v38`.
+**Notes:** A tighter crop (head + chest) reads much better at 28px than the whole dog. The image viewer shows photos
+brighter than their real pixels, so measure values with Pillow before choosing gains. Measured in the page at 1300px:
+all eight portraits clear the bookcase and each other.
+
+---
+
 ## 2026-10-28: Teddy and Cookie are the default dogs (for new visitors)
 **Why:** The app is public, and the owner wants anyone visiting to see Teddy, Cookie and the toy wall. Their personal
 walking/weight/food data must not be part of that.

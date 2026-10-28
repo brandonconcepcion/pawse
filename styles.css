@@ -780,7 +780,7 @@ body.toy-room::before {
   background: var(--wallpaper) repeat 0 0 / 48px 48px;
   image-rendering: pixelated;
 }
-/* Five framed portraits of Teddy (his photo, pixelated) hang in the side margins, only when the screen is wide enough
+/* Eight framed portraits (five of Teddy, three of Cookie; their photos, pixelated) hang in the side margins, only when the screen is wide enough
    for them to clear the bookcase. Each is 36 art pixels shown at 2× (72px). Kept above the tab bar. */
 @media (min-width: 1260px) {
   body.toy-room::before {
@@ -790,6 +790,9 @@ body.toy-room::before {
       var(--portrait) no-repeat 4.5% 70% / 72px 72px,
       var(--portrait) no-repeat 95% 22% / 72px 72px,
       var(--portrait) no-repeat 98.5% 58% / 72px 72px,
+      var(--portrait-cookie) no-repeat 3% 25% / 72px 72px,
+      var(--portrait-cookie) no-repeat 97% 5% / 72px 72px,
+      var(--portrait-cookie) no-repeat 94.5% 40% / 72px 72px,
       var(--wallpaper) repeat 0 0 / 48px 48px;
   }
 }
@@ -802,6 +805,9 @@ body.toy-room::before {
       var(--portrait) no-repeat 4.5% 70% / 108px 108px,
       var(--portrait) no-repeat 95% 22% / 108px 108px,
       var(--portrait) no-repeat 98.5% 58% / 108px 108px,
+      var(--portrait-cookie) no-repeat 3% 25% / 108px 108px,
+      var(--portrait-cookie) no-repeat 97% 5% / 108px 108px,
+      var(--portrait-cookie) no-repeat 94.5% 40% / 108px 108px,
       var(--wallpaper) repeat 0 0 / 48px 48px;
   }
 }

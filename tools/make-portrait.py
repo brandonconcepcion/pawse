@@ -2,13 +2,14 @@
 """Turns a dog photo into chunky pixel-art rows (palette letters) for a framed wall portrait.
 
   python3 tools/make-portrait.py PHOTO --box X0,Y0,X1,Y1 --ellipse CX,CY,RX,RY [--ellipse ...] \
-      [--size 28] [--gains R,G,B] [--preview out.png]
+      [--size 28] [--gains R,G,B] [--gamma 1] [--preview out.png]
 
 --box      square crop of the photo (pixels) around the dog.
 --ellipse  (crop coordinates) areas of the dog to keep. Everything outside fades to the room's teal, so a busy
            background (TV, cabinet, lamp) doesn't turn into noise. Repeat for head, ear, chest...
 --gains    white balance: multiply R,G,B. Sample the dog's white fur: gains = target(245,240,235) / fur color.
            Warm room lighting makes a white dog look tan without this.
+--gamma    below 1 lifts the shadows (applied before --gains). A dim photo, where the fur in shade reads brown/gray, needs ~0.6.
 Prints the PORTRAIT rows to paste into js/toys.js. Needs Pillow and numpy (dev tool only, not part of the app).
 """
 import argparse
@@ -22,9 +23,10 @@ PALETTE = {
 }
 
 
-def make(photo, box, size, ellipses, gains, contrast=1.15, background=(18, 83, 89)):
+def make(photo, box, size, ellipses, gains, contrast=1.15, background=(18, 83, 89), gamma=1.0):
     image = Image.open(photo).convert('RGB').crop(box)
-    balanced = np.clip(np.asarray(image).astype(float) * np.array(gains), 0, 255).astype('uint8')
+    lifted = 255 * (np.asarray(image).astype(float) / 255) ** gamma
+    balanced = np.clip(lifted * np.array(gains), 0, 255).astype('uint8')
     image = ImageEnhance.Contrast(Image.fromarray(balanced)).enhance(contrast)
     w, h = image.size
     keep = Image.new('L', (w, h), 0)
@@ -49,11 +51,12 @@ if __name__ == '__main__':
     parser.add_argument('--ellipse', action='append', required=True)
     parser.add_argument('--size', type=int, default=28)
     parser.add_argument('--gains', default='1,1,1')
+    parser.add_argument('--gamma', type=float, default=1.0)
     parser.add_argument('--preview')
     args = parser.parse_args()
     nums = lambda text: [float(v) for v in text.split(',')]
     rows, preview = make(args.photo, tuple(int(v) for v in nums(args.box)), args.size,
-                         [nums(e) for e in args.ellipse], nums(args.gains))
+                         [nums(e) for e in args.ellipse], nums(args.gains), gamma=args.gamma)
     if args.preview:
         preview.resize((preview.width * 10, preview.height * 10), Image.NEAREST).save(args.preview)
     print('const PORTRAIT = [')

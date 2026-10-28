@@ -807,7 +807,8 @@ function renderToys() {
     return;
   }
   document.body.style.setProperty('--wallpaper', `url(${wallpaperURL()})`); // for the full-screen wall
-  document.body.style.setProperty('--portrait', `url(${portraitURL()})`); // Teddy's pictures on it
+  document.body.style.setProperty('--portrait', `url(${portraitURL('teddy')})`); // Teddy's and Cookie's pictures on it
+  document.body.style.setProperty('--portrait-cookie', `url(${portraitURL('cookie')})`);
 
   const toys = sortedToys({ toys: allToys() });
   const { scale, columns } = shelfLayout();
