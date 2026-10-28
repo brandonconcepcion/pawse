@@ -25,8 +25,9 @@ Everything is stored on the device (IndexedDB + localStorage). There is no serve
 
 ## Live site
 
-https://brandonconcepcion.com/dogs/ (source: https://github.com/brandonconcepcion/dogs; the repo is named `dogs` because GitHub Pages takes the
-URL path from the repo name. The app is still called Pawse, and the local folder is still `~/Developer/pawse`.)
+https://brandonconcepcion.com/pawse/ (source: https://github.com/brandonconcepcion/pawse).
+https://brandonconcepcion.com/dogs/ also works: it's a separate tiny repo (`brandonconcepcion/dogs`, local copy
+`~/Developer/pawse-dogs-redirect/`) that forwards to `/pawse/` (keeping any `#/...` page)
 
 ## Run it
 
@@ -90,11 +91,11 @@ After any meaningful change:
 
 ## Not done yet / ideas
 
-- Published at **https://brandonconcepcion.com/dogs/** (GitHub Pages, public repo `brandonconcepcion/dogs`, deployed from `main` /
+- Published at **https://brandonconcepcion.com/pawse/** (GitHub Pages, public repo `brandonconcepcion/pawse`, deployed from `main` /
   root). Pushing to `main` redeploys in about a minute, so **bump `CACHE` in `sw.js` with every change** or installed
   copies may keep old files. `.nojekyll` makes Pages serve files as-is.
 - The owner's GitHub user site has the custom domain **brandonconcepcion.com**, so project pages live under it
-  (`brandonconcepcion.github.io/dogs` redirects there). HTTPS works (certificate approved) but "Enforce
+  (`brandonconcepcion.github.io/pawse` redirects there). HTTPS works (certificate approved) but "Enforce
   HTTPS" is off for the owner's whole site, so `index.html` redirects http → https itself. Don't change the
   owner's site-wide settings without asking.
 - Each origin has its own storage: data saved at `localhost:8642` is **not** on the published site. Move it

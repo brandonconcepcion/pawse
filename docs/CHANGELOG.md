@@ -5,6 +5,17 @@ Add an entry for every meaningful change (see `AGENTS.md` → "Keeping the docs 
 
 ---
 
+## 2026-10-27: Back to brandonconcepcion.com/pawse (/dogs redirects)
+**Why:** The owner prefers the Pawse name in the URL, but /dogs should keep working too.
+**What:** Renamed the repo back `dogs` → `pawse`, so the app is at **https://brandonconcepcion.com/pawse/**. Created
+a tiny separate repo `brandonconcepcion/dogs` (local: `~/Developer/pawse-dogs-redirect/`) with:
+- `index.html` + `404.html`: forward to `/pawse/`, keeping the `#/...` hash (e.g. `/dogs/#/gym` → `/pawse/#/gym`).
+- `sw.js`: a "kill switch" that unregisters the service worker Pawse registered while it lived at `/dogs/`. It
+  deliberately does **not** delete caches (the real app shares the origin's cache storage).
+**Notes:** Storage is per origin (brandonconcepcion.com), so dogs saved via either URL are the same data.
+
+---
+
 ## 2026-10-27: Moved to brandonconcepcion.com/dogs
 **What:** Renamed the GitHub repo `pawse` → `dogs` so the site lives at **https://brandonconcepcion.com/dogs/**
 (GitHub Pages uses the repo name as the path). The app name stays Pawse; the local folder stays `~/Developer/pawse`.
@@ -15,11 +26,11 @@ old repo name, but the local remote was updated anyway. All docs updated to the 
 ---
 
 ## 2026-10-27: Published on GitHub Pages
-**What:** Public repo `brandonconcepcion/dogs`, GitHub Pages from `main` / root. It's served on the owner's existing custom domain → **https://brandonconcepcion.com/dogs/**.
+**What:** Public repo `brandonconcepcion/pawse`, GitHub Pages from `main` / root. It's served on the owner's existing custom domain → **https://brandonconcepcion.com/pawse/**.
 Added `.nojekyll` (serve files as-is), `.gitignore`, and an http → https redirect in `index.html` (the domain
 doesn't enforce HTTPS, and the service worker and install need it). Commits use the GitHub noreply email so the
 owner's work email isn't public.
-**Notes:** All app paths are relative, so it works under `/dogs/`. Storage is per-origin: the owner's dogs at
+**Notes:** All app paths are relative, so it works under any path (`/pawse/`, briefly `/dogs/`). Storage is per-origin: the owner's dogs at
 `localhost:8642` must be moved with SAVE BACKUP → LOAD BACKUP. Future deploys = push to `main`, and bump `CACHE`.
 
 ---
