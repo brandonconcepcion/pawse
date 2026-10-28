@@ -13,7 +13,8 @@ the gym UI, and backups. It imports everything else. Sections are marked with ba
 | Celebration | `showCelebration` ("STAGE CLEAR" overlay) |
 | My Dogs | `renderDogList`, `renderDogProfile` |
 | Play log | `renderLog`, `backupBox` |
-| Sheets (dog & toy editors) | `openSheet`/`closeSheet`, `openDogEditor`, `openToyEditor`, `submitDog`, `submitToy`, `refreshDogPreviews` |
+| Toy wall | `toyWallDog`, `shelfLayout`, `renderToys`, `shelfStyle`, `openToyViewer` (spinning toy) |
+| Sheets (dog & toy editors) | `openSheet`/`closeSheet`, `openDogEditor`, `openToyEditor`, `submitDog`, `submitToy`, `refreshDogPreviews`, `refreshToyPreview` |
 | Backup | `exportBackup`, `importBackup`, `upgradeDogs`, `loadAll` |
 | Gym (+ "Stats page") | see [06-gym.md](06-gym.md) |
 | Event handling | the `actions` map + click/change/submit delegation |
@@ -25,7 +26,7 @@ the gym UI, and backups. It imports everything else. Sections are marked with ba
 <canvas id="park">        full-screen scene canvas (shared by park + gym), hidden on other screens
 <div id="dog-labels">     DOM name tags positioned over dogs each frame
 <main id="view">          current screen, re-rendered as innerHTML
-<nav class="tabbar">      PLAY/GYM · MY DOGS · LOG (built by renderTabBar)
+<nav class="tabbar">      PLAY/GYM · MY DOGS · TOYS · LOG (built by renderTabBar)
 <div id="overlay">        sheets (forms) and the celebration screen
 ```
 
@@ -41,13 +42,14 @@ Hash-based. `parseRoute()` → `{ name, id? }`:
 | `#/dogs` | `dogs` | Dog list |
 | `#/dogs/<id>` | `dog` | Dog profile |
 | `#/log` | `log` | Play log |
-| (empty) | last area | Whatever of play/gym/gymStats you were on last (`localStorage['pawse.area']`) |
+| `#/toys` | `toys` | Shared toy wall (see [08-toys.md](08-toys.md)) |
+| (empty) | `toys` | **The landing page is the Toy Wall.** Exception: if a play timer is running or paused, it opens `play` (the park, where the timer is). |
 
 `render()` is the single entry point. It records the area, updates the tab bar, toggles `body.immersive`,
 starts/stops the right scene, and calls the screen's `render*()` function. `hashchange` → `render()`.
 
-The first tab is **PLAY** (paw) or **GYM** (dumbbell) depending on the remembered area, so switching tabs and
-coming back returns you to the gym. `renderTabBar()` only rebuilds when that area changes.
+The first tab is **PLAY** (paw) or **GYM** (dumbbell) depending on the remembered area (`localStorage['pawse.area']`),
+so switching tabs and coming back returns you to the gym. (The remembered area no longer decides the landing page.) `renderTabBar()` only rebuilds when that area changes.
 
 ## State
 
@@ -67,7 +69,7 @@ state = { dogs, sessions, weights, route, calling }
   attributes. One delegated listener on `#view` and one on `#overlay`.
 - **Forms:** `<form data-form="dog|toy|weight">` → `submitDog` / `submitToy` / `submitWeight` on submit.
 - **Change events:** `photo` (pick + pixelate), `import` (restore backup), `coat`/`size` (refresh editor
-  previews), `date` in the weight sheet (prefill that day), `gym-dog` (switch gym buddy).
+  previews), `kind`/`color` in the toy editor (refresh the 3D preview), `date` in the weight sheet (prefill that day), `gym-dog` (switch gym buddy).
 - Sheets: `openSheet(html)` renders a backdrop + bottom sheet into `#overlay`; `sheetBar(title)` gives the
   CANCEL / title / SAVE row.
 

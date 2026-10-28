@@ -9,6 +9,7 @@ import { unlockAudio, playBlip, playStart, playChime, playCall, isMuted, setMute
 import { COATS, SIZES, iconURL, dogTileURL, dogSpriteURL, pixelatePhoto } from './pixel.js';
 import { ParkScene } from './scene.js';
 import { GymScene } from './gym-scene.js';
+import { TOY_COLORS, DEFAULT_COLOR, FRAMES, SPRITE, SHELF_TOP_ROW, toyLook, toySpriteURL, toySpan, toySize, WIDE_PAD_ROWS, shelfFrame, plankURL, wallpaperURL, portraitURL } from './toys.js';
 import { weeklySummary, foodVsWeight, recentPace, goalProgress, weekOf, isoDate, toDate } from './gym.js';
 
 // ---------------------------------------------------------------------------
@@ -30,6 +31,84 @@ const TOY_KINDS = [
   { id: 'frisbee', label: 'Frisbee' },
   { id: 'puzzle', label: 'Puzzle' },
   { id: 'other', label: 'Other' },
+  // Custom models recreated from the owner's photos (js/toys.js). `icon` is the flat 8×8 icon for small spots.
+  { id: 'sweater-bear', label: 'Sweater Bear', icon: 'plush' },
+  { id: 'nacho-chip', label: 'Nacho Chip', icon: 'plush' },
+  { id: 'dogquila', label: 'Dogquila', icon: 'plush' },
+  { id: 'lamb-chop', label: 'Lamb Chop', icon: 'plush' },
+  { id: 'pup-light', label: 'Pup Light', icon: 'plush' },
+];
+
+function toyIcon(kind) {
+  const known = TOY_KINDS.find((k) => k.id === kind);
+  return iconURL(known?.icon ?? (known ? kind : 'other'));
+}
+
+// What a brand-new visitor starts with: Teddy and Cookie (and, through DEFAULT_TOYS, the toys on the wall). Only names,
+// pixel looks and sizes. No photos, birthdays, weights, food, or play sessions are ever pre-filled.
+const DEFAULT_DOGS = [
+  { id: 'default-cookie', name: 'Cookie', coat: 'cookie', size: 'plump' },
+  { id: 'default-teddy', name: 'Teddy', coat: 'teddy', size: 'small' },
+];
+const DEFAULT_DOGS_KEY = 'pawse.defaultDogsAdded';
+
+// Toys added to a dog automatically, once. The dog remembers it got them (`defaultToys`), so a deleted one stays deleted.
+const DEFAULT_TOYS = [
+  {
+    dog: 'teddy',
+    toy: {
+      id: 'default-sweater-bear',
+      name: 'Sweater Bear',
+      kind: 'sweater-bear',
+      color: 'red',
+      rating: 4,
+      notes: 'Brown bear in a red, navy & white sweater, with a fluffy white hat.',
+    },
+  },
+  {
+    dog: 'teddy',
+    toy: {
+      id: 'default-nacho-chip',
+      name: 'Nacho Chip',
+      kind: 'nacho-chip',
+      color: 'orange',
+      rating: 4,
+      notes: 'Big plush nacho-cheese tortilla chip (a giant Dorito).',
+    },
+  },
+  {
+    dog: 'teddy',
+    toy: {
+      id: 'default-dogquila',
+      name: 'Dogquila',
+      kind: 'dogquila',
+      color: 'gray',
+      rating: 4,
+      notes: 'Fuzzyard Silver Dogquila: a plush tequila bottle. Slobber responsibly.',
+    },
+  },
+  {
+    dog: 'teddy',
+    toy: {
+      id: 'default-lamb-chop',
+      name: 'Lamb Chop',
+      kind: 'lamb-chop',
+      color: 'white',
+      rating: 4,
+      notes: 'Big plush lamb with red hooves. Takes two spots on the shelf.',
+    },
+  },
+  {
+    dog: 'teddy',
+    toy: {
+      id: 'default-pup-light',
+      name: 'Pup Light',
+      kind: 'pup-light',
+      color: 'blue',
+      rating: 4,
+      notes: 'Plush beer can, a Bud Light parody. Crinkly and squeaky.',
+    },
+  },
 ];
 
 const RATING_CAPTIONS = ['', "Meh, it's fine", 'Plays with it sometimes', 'A solid favorite', 'Loves it!', 'OBSESSED!!'];
@@ -100,8 +179,14 @@ const sortedToys = (dog) =>
 
 const dogDetails = (dog) => [dog.breed, ageOf(dog.birthday)].filter(Boolean).join(' · ');
 
-const pixelImg = (src, size, extra = '') =>
-  `<img class="px-img ${extra}" src="${src}" alt="" width="${size}" height="${size}">`;
+const pixelImg = (src, size, extra = '', height = size) =>
+  `<img class="px-img ${extra}" src="${src}" alt="" width="${size}" height="${height}">`;
+
+/** A toy's sprite at `scale` CSS px per art pixel. Big toys (two shelf slots) are wider and get a `wide` class. */
+function toyImg(toy, frame, scale, extra) {
+  const { w, h } = toySize(toy);
+  return pixelImg(toySpriteURL(toy, frame), w * scale, `${extra}${w > SPRITE ? ' wide' : ''}`, h * scale);
+}
 
 function avatar(dog, size) {
   const src = dog?.photoPixel || dogTileURL(dog?.coat ?? 'golden', dog?.size);
@@ -194,11 +279,13 @@ const activeScene = () => (state.route.name === 'gym' ? gymScene : scene);
 let pendingPhoto; // photo picked in the dog editor but not yet saved (undefined = unchanged)
 
 function parseRoute() {
-  if (!location.hash.replace(/^#\/?/, '')) return { name: lastArea() };
+  // The app opens on the Toy Wall. Unless a play timer is counting down: then it opens in the park, where the timer is.
+  if (!location.hash.replace(/^#\/?/, '')) return { name: timer.phase === 'running' || timer.phase === 'paused' ? 'play' : 'toys' };
   const [section, id] = location.hash.replace(/^#\/?/, '').split('/');
   if (section === 'dogs' && id) return { name: 'dog', id: decodeURIComponent(id) };
   if (section === 'dogs') return { name: 'dogs' };
   if (section === 'log') return { name: 'log' };
+  if (section === 'toys') return { name: 'toys' };
   if (section === 'gym') return { name: id === 'stats' ? 'gymStats' : 'gym' };
   return { name: 'play' };
 }
@@ -214,6 +301,7 @@ function render() {
   const tab = { dog: 'dogs', gym: 'play', gymStats: 'play' }[route.name] ?? route.name;
   document.querySelectorAll('.tabbar a').forEach((a) => a.classList.toggle('active', a.dataset.tab === tab));
   document.body.classList.toggle('immersive', route.name === 'play' || route.name === 'gym');
+  document.body.classList.toggle('toy-room', route.name === 'toys');
 
   if (route.name === 'play') {
     gymScene.stop();
@@ -232,6 +320,7 @@ function render() {
   if (route.name === 'dogs') renderDogList();
   else if (route.name === 'gymStats') renderGymStats();
   else if (route.name === 'log') renderLog();
+  else if (route.name === 'toys') renderToys();
   else renderDogProfile(route.id);
 }
 
@@ -443,6 +532,7 @@ window.addEventListener('resize', () => {
   resizeTimer = setTimeout(() => {
     activeScene().resize();
     if (state.route.name === 'play' || state.route.name === 'gym') measureInsets();
+    if (state.route.name === 'toys') renderToys(); // shelves hold more toys on wider screens
   }, 150);
 });
 
@@ -514,7 +604,7 @@ function renderDogList() {
             <div class="dog-row-text">
               <div class="dog-name">${escapeHTML(dog.name)}</div>
               ${details ? `<div class="muted">${escapeHTML(details)}</div>` : ''}
-              ${top ? `<div class="loves">${pixelImg(iconURL(top.kind), 16)} LOVES ${escapeHTML(top.name.toUpperCase())}</div>` : ''}
+              ${top ? `<div class="loves">${pixelImg(toyIcon(top.kind), 16)} LOVES ${escapeHTML(top.name.toUpperCase())}</div>` : ''}
             </div>
             <span class="chevron">▶</span>
           </a>`;
@@ -564,15 +654,18 @@ function renderDogProfile(id) {
       <h2 class="label">FAVORITE TOYS</h2>
       ${toys.length ? '' : '<p class="muted">No toys yet. What do they go crazy for?</p>'}
       ${toys.map((toy) => `
-        <button class="toy-row" data-action="edit-toy" data-dog="${escapeHTML(dog.id)}" data-id="${escapeHTML(toy.id)}">
-          ${pixelImg(iconURL(toy.kind), 32)}
+        <button class="toy-row" data-action="view-toy" data-id="${escapeHTML(toy.id)}">
+          ${toyImg(toy, shelfFrame(toy), 2, 'toy-thumb')}
           <span class="toy-text">
             <span class="toy-name">${escapeHTML(toy.name)}</span>
             ${toy.notes ? `<span class="muted">${escapeHTML(toy.notes)}</span>` : ''}
           </span>
           <span class="mini-bones">${bones(toy.rating)}</span>
         </button>`).join('')}
-      <button class="px-btn small add-toy" data-action="add-toy" data-dog="${escapeHTML(dog.id)}">+ ADD TOY</button>
+      <div class="toy-buttons">
+        <button class="px-btn small" data-action="add-toy" data-dog="${escapeHTML(dog.id)}">+ ADD TOY</button>
+        <a class="px-btn small" href="#/toys">TOY WALL ▶</a>
+      </div>
     </section>
 
     ${dog.treat || dog.notes ? `
@@ -683,6 +776,121 @@ function backupBox() {
 }
 
 // ---------------------------------------------------------------------------
+// Toy wall
+// ---------------------------------------------------------------------------
+
+const MIN_SHELVES = 4;
+
+/** Every toy the pups have, in one list. The wall is shared, so it doesn't matter whose record a toy sits in. */
+const allToys = () => [...new Map(state.dogs.flatMap((d) => d.toys).map((toy) => [toy.id, toy])).values()];
+
+const pupNames = () => joinNames(state.dogs.map((d) => d.name));
+
+/** Pixel scale and toys per shelf, so sprites stay crisp and fill the width. */
+function shelfLayout() {
+  const scale = window.innerWidth >= 700 ? 4 : 3;
+  const inner = $view.clientWidth - 32 - 2 * 4 * scale; // page padding + the bookcase sides
+  const columns = Math.max(3, Math.min(8, Math.floor(inner / (SPRITE * scale + 6))));
+  return { scale, columns };
+}
+
+function renderToys() {
+  if (!state.dogs.length) {
+    $view.innerHTML = `
+      <header class="page-header"><h1 class="logo">TOY WALL</h1></header>
+      <div class="empty px-box">
+        ${pixelImg(toySpriteURL({ kind: 'ball' }), 128)}
+        <h2>NO PUPS YET</h2>
+        <p class="muted">Add a dog first. Their toys will show up on the shelves.</p>
+        <a class="px-btn go" href="#/dogs">+ ADD A DOG</a>
+      </div>`;
+    return;
+  }
+  document.body.style.setProperty('--wallpaper', `url(${wallpaperURL()})`); // for the full-screen wall
+  document.body.style.setProperty('--portrait', `url(${portraitURL()})`); // Teddy's pictures on it
+
+  const toys = sortedToys({ toys: allToys() });
+  const { scale, columns } = shelfLayout();
+  const slots = [
+    ...toys.map((toy) => ({
+      span: toySpan(toy),
+      html: `
+      <button class="toy-slot${toySpan(toy) > 1 ? ' wide' : ''}" data-action="view-toy" data-id="${escapeHTML(toy.id)}">
+        ${toyImg(toy, shelfFrame(toy), scale, 'toy-sprite')}
+        <span class="toy-tag">${toy.rating === 5 ? pixelImg(iconURL('star'), 8) : ''}<span>${escapeHTML(toy.name)}</span></span>
+      </button>`,
+    })),
+  ];
+  // Fill shelves left to right. A big toy that doesn't fit at the end of a shelf starts the next one.
+  const EMPTY = '<div class="toy-slot"></div>';
+  const shelves = [[]];
+  let used = 0;
+  for (const { span, html } of slots) {
+    if (used + span > columns) {
+      shelves.at(-1).push(...Array(columns - used).fill(EMPTY));
+      shelves.push([]);
+      used = 0;
+    }
+    shelves.at(-1).push(html);
+    used += span;
+  }
+  shelves.at(-1).push(...Array(columns - used).fill(EMPTY));
+  while (shelves.length < MIN_SHELVES) shelves.push(Array(columns).fill(EMPTY));
+
+  $view.innerHTML = `
+    <header class="page-header">
+      <h1 class="logo">TOY WALL</h1>
+    </header>
+    <p class="plaque">${escapeHTML(pupNames().toUpperCase())}'S TOYS · ${toys.length}</p>
+    <section class="bookcase" style="${shelfStyle(scale)} --cols:${columns}">
+      ${shelves.map((shelf) => `<div class="shelf">${shelf.join('')}</div>`).join('')}
+    </section>`;
+}
+
+/** CSS variables the shelf art needs: pixel scale and the plank/wallpaper tiles. */
+const shelfStyle = (scale, top = 0) =>
+  `--s:${scale}px; --plank:url(${plankURL()}); --wallpaper:url(${wallpaperURL()}); --shelf-top:${SHELF_TOP_ROW + top};`;
+
+let spinTimer;
+
+/** Tap a toy: it spins on a little shelf, with its details underneath. */
+function openToyViewer(toy) {
+  const { kind, color } = toyLook(toy);
+  const wide = toySpan(toy) > 1;
+  const scale = wide ? 5 : 6; // a big toy is twice as wide, so a notch smaller to fit a phone
+  openSheet(`
+    <div class="toy-viewer">
+      <div class="sheet-bar">
+        <button type="button" class="px-btn tiny" data-action="close-sheet">CLOSE</button>
+        <h2>${escapeHTML(pupNames().toUpperCase())}'S TOY</h2>
+        <span></span>
+      </div>
+      <div class="turntable${wide ? ' wide' : ''}" style="${shelfStyle(scale, toySize(toy).top)}">
+        ${toyImg(toy, 0, scale, 'toy-spin')}
+      </div>
+      <h3 class="toy-title">${escapeHTML(toy.name)}</h3>
+      <p class="muted">${TOY_COLORS[color].label} ${TOY_KINDS.find((k) => k.id === kind)?.label ?? ''}</p>
+      <div class="rating">
+        <div class="mini-bones">${bones(toy.rating)}</div>
+        <p>${RATING_CAPTIONS[toy.rating] ?? ''}</p>
+      </div>
+      ${toy.notes ? `<p class="notes px-box">${escapeHTML(toy.notes)}</p>` : ''}
+    </div>`);
+
+  clearInterval(spinTimer);
+  let frame = 0;
+  spinTimer = setInterval(() => {
+    const img = $overlay.querySelector('.toy-spin');
+    if (!img) {
+      clearInterval(spinTimer);
+      return;
+    }
+    frame = (frame + 1) % FRAMES;
+    img.src = toySpriteURL(toy, frame);
+  }, 1000 / 8);
+}
+
+// ---------------------------------------------------------------------------
 // Sheets (dog & toy editors)
 // ---------------------------------------------------------------------------
 
@@ -760,10 +968,12 @@ function openDogEditor(dog) {
 
 function openToyEditor(dog, toy) {
   const rating = toy?.rating ?? 4;
-  const kind = toy?.kind ?? 'ball';
+  const { kind, color } = toyLook(toy ?? { kind: 'ball' });
   openSheet(`
-    <form data-form="toy" data-dog="${escapeHTML(dog.id)}" data-id="${escapeHTML(toy?.id ?? '')}" autocomplete="off">
+    <form data-form="toy" data-dog="${escapeHTML(dog.id)}" data-id="${escapeHTML(toy?.id ?? '')}" ${toy?.color ? 'data-color-picked' : ''} autocomplete="off">
       ${sheetBar(toy ? 'EDIT TOY' : 'NEW TOY')}
+
+      <div class="turntable${toySpan({ kind }) > 1 ? ' wide' : ''}" style="${shelfStyle(4, toySize({ kind }).top)}">${toyImg({ kind, color }, 0, 4, 'toy-preview-img')}</div>
 
       <div class="group px-box">
         <label class="field"><span>Name</span><input name="name" required maxlength="50" value="${escapeHTML(toy?.name)}" placeholder="Squeaky Duck" autocapitalize="words"></label>
@@ -772,10 +982,19 @@ function openToyEditor(dog, toy) {
       <h3 class="label group-title">TYPE</h3>
       <div class="group px-box kind-grid">
         ${TOY_KINDS.map((k) => `
-          <label class="pick">
+          <label class="pick${toySpan({ kind: k.id }) > 1 ? ' wide' : ''}">
             <input type="radio" name="kind" value="${k.id}" ${k.id === kind ? 'checked' : ''}>
-            ${pixelImg(iconURL(k.id), 32)}
+            ${toyImg({ kind: k.id }, 0, 2, 'toy-pick')}
             <span>${k.label}</span>
+          </label>`).join('')}
+      </div>
+
+      <h3 class="label group-title">COLOR</h3>
+      <div class="group px-box color-grid">
+        ${Object.entries(TOY_COLORS).map(([id, c]) => `
+          <label class="swatch" title="${c.label}">
+            <input type="radio" name="color" value="${id}" ${id === color ? 'checked' : ''}>
+            <i style="--a:${c.ramp[2]}; --b:${c.ramp[1]}"></i>
           </label>`).join('')}
       </div>
 
@@ -837,6 +1056,20 @@ async function submitDog(form) {
   render();
 }
 
+/** Shows the picked type in the picked color. Until a color is chosen, it follows the type's usual color. */
+function refreshToyPreview(form, changed) {
+  if (changed === 'color') form.dataset.colorPicked = '';
+  else if (form.dataset.colorPicked === undefined) form.elements.color.value = DEFAULT_COLOR[form.elements.kind.value];
+  const look = { kind: form.elements.kind.value, color: form.elements.color.value };
+  const img = form.querySelector('.toy-preview-img');
+  const wide = toySpan(look) > 1;
+  img.src = toySpriteURL(look);
+  img.classList.toggle('wide', wide); // the CSS sizes it
+  const turntable = img.closest('.turntable');
+  turntable.classList.toggle('wide', wide);
+  turntable.style.setProperty('--shelf-top', SHELF_TOP_ROW + toySize(look).top); // keep the plank under the toy
+}
+
 async function submitToy(form) {
   const dog = findDog(form.dataset.dog);
   if (!dog) return;
@@ -846,6 +1079,7 @@ async function submitToy(form) {
   const fields = {
     name,
     kind: String(data.get('kind') || 'other'),
+    color: TOY_COLORS[data.get('color')] ? String(data.get('color')) : undefined,
     rating: Number(data.get('rating')) || 3,
     notes: String(data.get('notes')).trim(),
   };
@@ -905,6 +1139,7 @@ async function importBackup(file) {
       photoPixel: '',
       createdAt: Number(d.createdAt) || Date.now(),
       toys: Array.isArray(d.toys) ? d.toys : [],
+      defaultToys: strings(d.defaultToys),
     }));
     // Older backups kept sessions inside each dog.
     const rawSessions = Array.isArray(parsed.sessions)
@@ -970,6 +1205,30 @@ async function loadAll() {
   state.sessions = await loadSessions();
   state.weights = await loadWeights();
   await upgradeDogs();
+  await addDefaultDogs();
+  await addDefaultToys();
+}
+
+/** First visit on a device with no dogs: add Teddy and Cookie. Only ever once, so deleting them sticks. */
+async function addDefaultDogs() {
+  const firstTime = !localStorage.getItem(DEFAULT_DOGS_KEY) && !state.dogs.length;
+  localStorage.setItem(DEFAULT_DOGS_KEY, '1');
+  if (!firstTime) return;
+  for (const { id, name, coat, size } of DEFAULT_DOGS) {
+    const dog = { id, name, breed: '', birthday: '', coat, size, treat: '', notes: '', photo: '', photoPixel: '', createdAt: Date.now(), toys: [], defaultToys: [] };
+    await saveDog(dog);
+    state.dogs.push(dog);
+  }
+}
+
+async function addDefaultToys() {
+  for (const { dog: name, toy } of DEFAULT_TOYS) {
+    const dog = state.dogs.find((d) => d.name.trim().toLowerCase() === name);
+    if (!dog || dog.defaultToys?.includes(toy.id)) continue;
+    dog.defaultToys = [...(dog.defaultToys ?? []), toy.id];
+    if (!dog.toys.some((t) => t.id === toy.id)) dog.toys.push({ ...toy, createdAt: Date.now() });
+    await saveDog(dog);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1477,6 +1736,12 @@ const actions = {
     render();
   },
   'add-toy': (el) => openToyEditor(findDog(el.dataset.dog), null),
+  'view-toy': (el) => {
+    const toy = allToys().find((t) => t.id === el.dataset.id);
+    if (!toy) return;
+    playBlip(true);
+    openToyViewer(toy);
+  },
   'edit-toy': (el) => {
     const dog = findDog(el.dataset.dog);
     openToyEditor(dog, dog?.toys.find((t) => t.id === el.dataset.id));
@@ -1554,6 +1819,8 @@ for (const root of [$view, $overlay]) {
       input.value = '';
     } else if (input.name === 'coat' || input.name === 'size') {
       refreshDogPreviews(input.form);
+    } else if ((input.name === 'kind' || input.name === 'color') && input.form?.dataset.form === 'toy') {
+      refreshToyPreview(input.form, input.name);
     } else if (input.name === 'date' && input.form?.dataset.form === 'weight') {
       prefillWeightLog(input.form);
     } else if (input.name === 'gym-dog') {
@@ -1606,6 +1873,7 @@ function renderTabBar() {
   document.querySelector('.tabbar').innerHTML = `
     ${first}
     <a href="#/dogs" data-tab="dogs">${pixelImg(dogTileURL('golden'), 24)}<span>MY DOGS</span></a>
+    <a href="#/toys" data-tab="toys">${pixelImg(iconURL('ball'), 24)}<span>TOYS</span></a>
     <a href="#/log" data-tab="log">${pixelImg(iconURL('log'), 24)}<span>LOG</span></a>`;
 }
 

@@ -19,9 +19,18 @@ Main features:
 2. **Gym:** a full-screen retro gym where all dogs work out, plus daily weight (lb) and food (g) tracking with
    stats and food-vs-weight analysis.
 3. **My Dogs:** profiles, pixel coats and sizes, photos (shown as pixel portraits), favorite toys.
-4. **Log:** history of every play session.
+4. **Toys:** a full-screen "toy wall": a wooden bookcase of shelves per dog, where each toy is a small 3D model
+   rendered as a pixel sprite (tap one to watch it spin). The owner plans to send toy screenshots to recreate
+   as custom models. **To add a toy from photos, follow the skill at
+   [`.claude/skills/pawse-toy-maker/SKILL.md`](.claude/skills/pawse-toy-maker/SKILL.md)**; renderer details are in
+   [toys](docs/context/08-toys.md).
+5. **Log:** history of every play session.
 
 Everything is stored on the device (IndexedDB + localStorage). There is no server, account, or build step.
+
+**New visitors** (a device with no dogs) start with Teddy and Cookie (names, pixel looks, sizes) and the toy wall's
+toys, via `DEFAULT_DOGS` / `DEFAULT_TOYS` in `js/app.js`. **Never pre-fill the owner's personal data** (photos,
+birthdays, weights, food, play sessions): the site is public. The app opens on the Toy Wall.
 
 ## Live site
 
@@ -51,6 +60,8 @@ Plain HTML/CSS/JS with native ES modules. No npm, no bundler. Syntax-check a fil
 | `js/scene.js` | `ParkScene`: full-screen park + the dog "brain" shared by both scenes | [park scene](docs/context/05-park-scene.md) |
 | `js/gym-scene.js` | `GymScene extends ParkScene`: gym room, equipment, activities | [gym](docs/context/06-gym.md) |
 | `js/gym.js` | Pure math: weekly averages, pace, food-vs-weight correlation | [gym](docs/context/06-gym.md) |
+| `tools/toy-preview.mjs` | Node script: renders a toy model from several angles to a PNG (no browser) | [toys](docs/context/08-toys.md) |
+| `js/toys.js` | 3D toy models ray-marched into pixel sprites, toy colors, shelf/wallpaper tiles | [toys](docs/context/08-toys.md) |
 | `styles.css` | The whole 8-bit UI system | [PWA, offline & styles](docs/context/07-pwa-offline-and-styles.md) |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Offline support and home-screen install | [PWA, offline & styles](docs/context/07-pwa-offline-and-styles.md) |
 | `fonts/`, `sounds/` | Press Start 2P + VT323 (OFL), `wanna-play.mp3` | [PWA, offline & styles](docs/context/07-pwa-offline-and-styles.md) |

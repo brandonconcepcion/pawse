@@ -5,7 +5,10 @@ scaled up with `image-rendering: pixelated`.
 
 ## Palette `C`
 PICO-8's 16 colors (`navy`, `red`, `orange`, `yellow`, `green`, `blue`, `pink`, `peach`, `cream`, …) plus extras:
-sky tints (`sky2`–`sky4`), grass (`leaf`, `lawn`), and Teddy's `tan` and `cocoa`. `navy` is the universal outline color.
+sky tints (`sky2`–`sky4`), grass (`leaf`, `lawn`), Teddy's `tan` and `cocoa`, and PICO-8's 16 "secret" colors
+(`darkBrown` … `salmon`) used for toy shading and the toy room. `navy` is the universal outline color.
+The 3D toy sprites on the Toy Wall live in `js/toys.js` (see [08-toys.md](08-toys.md)). The flat 8×8 toy icons
+here are still used for small spots (the "LOVES" line, the TOYS tab).
 
 ## Dogs
 

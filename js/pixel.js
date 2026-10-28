@@ -27,6 +27,22 @@ export const C = {
   // Teddy's colors
   tan: '#A07E5E',
   cocoa: '#3B2416',
+  // PICO-8's "secret" extra 16, used to shade the 3D toys (js/toys.js) and the toy room
+  darkBrown: '#291814',
+  midnight: '#111D35',
+  darkPlum: '#422136',
+  teal: '#125359',
+  rust: '#742F29',
+  mauve: '#49333B',
+  taupe: '#A28879',
+  butter: '#F3EF7D',
+  crimson: '#BE1250',
+  tangerine: '#FF6C24',
+  lime: '#A8E72E',
+  cobalt: '#065AB5',
+  grape: '#754665',
+  coral: '#FF6E59',
+  salmon: '#FF9D81',
 };
 
 // ---------------------------------------------------------------------------

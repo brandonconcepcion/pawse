@@ -1,6 +1,6 @@
 // Lets Pawse open with no internet. Always tries the network first so updates show up right away,
 // and falls back to the cached copy when offline.
-const CACHE = 'pawse-v13';
+const CACHE = 'pawse-v37';
 const ASSETS = [
   './',
   './index.html',
@@ -13,6 +13,7 @@ const ASSETS = [
   './js/scene.js',
   './js/gym.js',
   './js/gym-scene.js',
+  './js/toys.js',
   './fonts/PressStart2P.woff2',
   './fonts/VT323.woff2',
   './sounds/wanna-play.mp3',

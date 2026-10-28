@@ -5,6 +5,205 @@ Add an entry for every meaningful change (see `AGENTS.md` → "Keeping the docs 
 
 ---
 
+## 2026-10-28: Teddy and Cookie are the default dogs (for new visitors)
+**Why:** The app is public, and the owner wants anyone visiting to see Teddy, Cookie and the toy wall. Their personal
+walking/weight/food data must not be part of that.
+**What:** `DEFAULT_DOGS` + `addDefaultDogs()` in `app.js`: on a device with **no dogs and no `pawse.defaultDogsAdded`
+flag**, add Teddy (teddy coat, small) and Cookie (cookie coat, plump). Name, coat and size only: no photo, birthday,
+goal weight, weigh-ins, food, or play sessions. The flag is set on every load, so deleting them sticks, and a device
+that already has dogs never gets them added. `DEFAULT_TOYS` then puts the toys on Teddy. A backup restore still
+replaces everything (including these), and the owner's real data on `localhost` is untouched.
+**Verified:** fresh visit → both dogs, 5 toys, 0 weights/sessions, gym + stats render; delete both + reload → stays empty;
+device with its own dog → nothing added. `sw.js` is `pawse-v37`.
+
+---
+
+## 2026-10-28: Toy Wall is the landing page
+**Why:** The owner loved the toy wall and wants the app to open on it.
+**What:** `parseRoute()` sends an empty hash (opening the app, or the home-screen icon) to `#/toys` instead of the last
+play/gym area. If a play timer is running or paused it opens `play` instead, so a countdown is never hidden. The tab bar
+still remembers park vs gym for its first tab. `sw.js` is `pawse-v36`.
+**Verified:** in a private window with "last area = gym": no hash → toy wall (TOYS tab active); with a running timer →
+the park with the timer. Test data removed.
+
+---
+
+## 2026-10-28: Teddy's real photo on the wall (pixelated)
+**Why:** The owner sent a photo of Teddy and asked for it in the toy wall's background, more pixelated.
+**What:** The five framed wall portraits now show that photo instead of the hand-drawn face. New
+`tools/make-portrait.py` (Pillow + numpy, dev only) crops, white-balances (the warm room light made his white fur
+tan), fades the busy background to teal with soft ellipses, and snaps to a 13-color neutral palette with no dithering
+(dithering looked noisy). `toys.js`: `PORTRAIT` (28×28 rows) + `PORTRAIT_COLORS`, `portraitURL()` is 36×36 with a wood
+frame. `styles.css`: portraits 72px (2×), and 108px (3×) from 1500px wide. They only appear at ≥1260px, so phones
+don't show them. `sw.js` is `pawse-v35`.
+**Verified:** at 1440px the five portraits sit in the margins and clear the bookcase (checked by measuring and drawing
+the layout; the preview screenshot tool timed out again).
+
+---
+
+## 2026-10-28: One shared toy wall for both pups
+**Why:** The owner said all the toys belong to both Teddy and Cookie, so there should be no per-dog distinction or filter.
+**What:** `renderToys()` now shows every dog's toys on one wall (`allToys()`, de-duplicated by id), sorted best-rated
+first. Removed the dog chips, `toyWallDog()` and the `pawse.toyDog` setting. The plaque is "COOKIE & TEDDY'S TOYS · N"
+and the viewer title says the same. `#/toys/<id>` still works (the id is ignored). `view-toy` looks a toy up across all
+dogs (no `data-dog`), and the dog profile's **TOY WALL ▶** goes to `#/toys`. `sw.js` is `pawse-v34`.
+**Unchanged:** new default toys are still saved on Teddy (it doesn't matter which dog holds them). The five framed
+portraits on the wall are still all Teddy.
+**Verified:** in a private window, a toy only on Cookie's record and one on both records show once each, there are no
+chips, the viewer opens, and the profile page still opens toys.
+
+---
+
+## 2026-10-28: Pup Light made slimmer
+**Why:** The owner liked the Pup Light but found it a bit too wide.
+**What:** In `js/toys.js` (`pup-light`), the can's `disc` radius went from 6.6 to 5.7 (about 14 px wide down to about
+12), and the crest, paw, PUP/LIGHT letter blocks and white lines were narrowed to match so they still fit.
+A trial at 5.3 was too thin: the lettering fell apart.
+`sw.js` cache bumped.
+
+---
+
+## 2026-10-28: Pup Light beer can
+**Why:** The owner sent a photo of Nestpark's "Pup Light" plush beer can and wanted it as a Teddy default.
+**What:** New `pup-light` model in `js/toys.js`: one smooth `disc` with a `mat` function for the label (gray rims, light
+top band with a dark diamond crest and white paw, white letter blocks for PUP and LIGHT, two white lines), printed front
+and back. New non-pickable `royal` ramp for the deep blue; its shade tones stay off navy so the shadowed side doesn't
+merge into the outline. Listed as "Pup Light" (icon `plush`), default for Teddy (`default-pup-light`, 4 bones).
+`sw.js` cache is now `pawse-v32`.
+**Simplified:** the lettering is rows of white blocks (no room to spell at 32×32); the "nestpark" logo, "ORIGINAL" and
+"CHEW TOY" text and the banner around the crest were left out.
+
+---
+
+## 2026-10-28: Toy Wall is display-only
+**Why:** The owner will add toys by sending photos to an agent, so the wall doesn't need add/edit controls ("mainly just
+for show").
+**What:** Removed the header **+** button, the **+ ADD TOY** shelf slot (and its `.toy-ghost` / `.toy-slot.add` CSS), and
+the viewer's **EDIT** button. Tapping a toy still opens the spinning viewer. The toy editor and the dog profile's
+**+ ADD TOY** / toy rows are unchanged (that's how toys can still be deleted or rated).
+**Files:** `js/app.js` (`renderToys`, `openToyViewer`), `styles.css`, `sw.js` (v31), `docs/context/08-toys.md`.
+**Verified:** in a private window, no add buttons on the wall, the viewer has no EDIT, and toys still open and render.
+
+---
+
+## 2026-10-28: Lamb Chop, the first two-slot toy
+**Why:** The owner sent photos of Multipet's Lamb Chop and asked for it as a Teddy default that takes two shelf spots,
+since it's so big.
+**What:** New `lamb-chop` model (`span: 2`) in `js/toys.js`, listed as "Lamb Chop" (icon `plush`), default for Teddy
+(`default-lamb-chop`, 4 bones). New support for two-slot toys: `spriteSize()`, `WIDE_EXTRA_ROWS`, `toySpan()`; `rasterize()`
+and `toySpriteURL()` use the model's sprite size. `app.js`: `toyImg()` helper, shelves filled by width, wide viewer/editor/
+TYPE grid/dog-page thumbnails, `pixelImg()` takes an optional height. `styles.css`: the `.wide` rules. `tools/toy-preview.mjs`
+renders wide sprites. `sw.js` cache is now `pawse-v30`.
+**Update:** the owner wanted it lying straight along the shelf, so the model has no `face` turn and `shelfFrame()` gives
+two-slot toys no random tilt (a turned long toy poked diagonally off the front of the shelf). Then the head grew ~20% (radius
+6.3 → 7.6, face, muzzle and ears scaled with it), set a little lower and closer to the body so it still clears the top of
+the sprite when the toy spins end-on. Then, by request, the whole lamb got fuller and bigger: plumper body, thicker
+legs, bigger hooves, round fluffy black eye patches instead of thin dashes, and everything scaled 1.12× with a new
+`scaled()` helper. To make room for the spin, two-slot sprites are now 64×48 (8 spare rows above as well as below,
+`WIDE_PAD_ROWS`); `toySize()` and `shelfStyle(scale, top)` keep the shelf and turntable planks lined up. Verified at
+iPhone size: same floor line and tag height as the other toys, still tappable, spins inside the viewer with the plank under it. Last pass: the whole head group (face and ears)
+is grown another 1.25× around its chin with `scaled(part, k, cx, cy, cz)`, the back legs and ear tips are a bit shorter, and
+the model is nudged right, so it still fits 64 columns at every angle. From a new reference photo: that was too big, so
+the head is now grown 1.12×; the eyes are closed lids with a short lash fringe that flicks out at the corners, painted onto
+the face by a `mat` function in a new solid-black `lash` ramp (the `ink` ramp turns mauve on the lit side); the ears stick
+up and out. Then the head was tipped back ~17° from the neck (`tipped(part, -0.3, 3, 1.8)`) so it looks up and out like the
+photo, and the lid line thinned so the lash spikes stay separate when the face is more frontal. The red smile became a
+bigger tongue that pokes out past the muzzle. Details in `docs/context/08-toys.md` → "Big toys".
+**Verified:** all angles rendered (fits 64×40 at every angle). In a private window at iPhone size: a test Teddy got it
+(Cookie didn't), it spans two of three slots, the viewer spins it inside the turntable (320px), the editor shows a double-wide
+TYPE tile and the preview resizes when switching kinds, deleting it stays deleted after reload. Test dogs deleted.
+**Notes:** on a phone the dog page's toy row for a wide toy is taller (its thumbnail leaves less room for the notes).
+
+---
+
+## 2026-10-28: Five Teddy portraits (not a tiled pattern), rounder-necked Dogquila
+**Why:** The owner wanted about five of Teddy's faces in total, none behind the bookcase, and the Dogquila's body and top
+looked too squished together.
+**What:** `wallpaperURL()` is back to the plain 16×16 paw tile (48px in the CSS). New `portraitURL()` (20×20 framed face);
+`body.toy-room::before` hangs five of them in the side margins at `min-width: 1260px` (narrower screens have no room
+beside the bookcase, so they show the plain wall). `.bookcase` now paints its own darkened wallpaper instead of being
+see-through. `app.js` sets `--portrait` next to `--wallpaper`. Dogquila: a shorter round body, small shoulders, a longer
+narrow neck, and the black band moved up under the collar (the camera tilt hid the bottom of the neck, so a low band
+sat right on the shoulders). `sw.js` cache is now `pawse-v22`.
+
+---
+
+## 2026-10-28: Teddy's portraits on the toy-room wallpaper
+**Why:** The owner asked for Teddy's face in different spots on the toy page's wallpaper, in the same pixel style.
+**What:** `wallpaperURL()` in `js/toys.js` is now a 64×64 tile (was 16×16) with two framed 16×16 pixel portraits of Teddy
+hung at scattered spots among the paw prints (paws are skipped under a frame). `TEDDY_FACE` is hand-pixelled from the photo
+using the app palette. `styles.css`: the two wallpaper `background-size` values went from `48px` to `192px` (3× per art pixel, as before).
+`sw.js` cache is now `pawse-v21`.
+**Notes:** the same wallpaper shows on every dog's wall and on the toy viewer's turntable.
+
+---
+
+## 2026-10-28: Third custom toy, Dogquila
+**Why:** The owner sent a photo of Fuzzyard's plush "Silver Dogquila" tequila bottle.
+**What:** New `dogquila` model in `js/toys.js`: a fuzzy rounded-box body with a front-only black label (trim, dashes for the text, dog, 20 / 03), a small tag, a white neck with a black band, and a peach cork. Body color is recolorable (default `gray`). Listed as "Dogquila" in the TYPE grid (icon `plush`). `sw.js` cache is now `pawse-v18`. Added to Teddy by default via `DEFAULT_TOYS` (`default-dogquila`, 4 bones).
+**Update:** the body is a custom pillow with big rounded corners (`rounded()` helper, radius 5.4) instead of a `roundBox`, and the label has rounded corners too, so it reads as a soft squircle bottle rather than a block.
+**Simplified:** the writing is rows of white dashes, since real text can't survive at 32×32.
+**Verified:** rendered at 6 angles with `tools/toy-preview.mjs`; checked in a private window (see below).
+
+---
+
+## 2026-10-28: Second custom toy, the Nacho Chip
+**Why:** The owner sent a photo of a big plush tortilla chip (a giant Dorito) for their dogs.
+**What:** New `nacho-chip` model in `js/toys.js` built on a new `pillowTriangle()` shape helper (rounded triangle, puffed in the
+middle, thin at the rim). Cheesy orange base (`color` recolors it) with yellow highlight patches, a thin red toasted band and
+brown specks taken from the photo, mirrored on the back. Listed as "Nacho Chip" in the editor TYPE grid (icon `plush`). `sw.js` cache
+is now `pawse-v17`. Added to Teddy by default via `DEFAULT_TOYS` (`default-nacho-chip`, 4 bones).
+**Verified:** rendered at 6 angles with `tools/toy-preview.mjs` (fits the sprite, no clipping). In a private window a test dog
+showed it on the wall, it spins in the viewer, and the editor lists it; test dog deleted afterwards.
+
+---
+
+## 2026-10-28: Toy-maker handoff skill + preview tool
+**Why:** The owner wants a separate agent to build toy models from their photos, so this thread's context doesn't fill up.
+**What:** `.claude/skills/pawse-toy-maker/SKILL.md` is the full procedure (studying photos, primitives cheat sheet,
+render-compare loop, lessons from the Sweater Bear, registering, default toys, incognito verification, what to
+report). `tools/toy-preview.mjs` renders any model from chosen angles to a PNG and checks the sprite bounds.
+`toys.js` now exports `MODELS` and `rasterize` for it.
+**Notes:** the tool runs on plain Node 22.7+ (ESM detection), with no packages.
+
+---
+
+## 2026-10-28: First custom toy, Teddy's Sweater Bear
+**Why:** The owner sent front and back photos of Teddy's plush bear and asked for it in the toy-wall style, added
+by default.
+**What:** A new `sweater-bear` model in `js/toys.js`: brown plush (new non-pickable `fur` ramp), tan muzzle, red
+Fair Isle sweater with navy/white bands of hearts, red sleeves with a navy band, and a fluffy white hat with a pom
+(a new `fuzzy()` helper adds lumps). It's listed in the editor's TYPE grid as "Sweater Bear", and `color`
+recolors the sweater.
+`DEFAULT_TOYS` + `addDefaultToys()` in `app.js` give it to the dog named Teddy once (rated 4 bones), tracked in the
+new `dog.defaultToys` field (kept in backups), so deleting it sticks. `toyIcon()` maps custom kinds to a flat icon.
+**Verified:** all angles rendered to PNG. In a private window: a test Teddy got the bear on load, Cookie didn't,
+it stayed gone after deleting + reloading, and the editor lists the new type. Test dogs deleted afterwards.
+
+---
+
+## 2026-10-28: Toy Wall (3D pixel toys on shelves)
+**Why:** The owner wants a dedicated toy page for building out Teddy's collection: "a huge wall with many rows of
+shelves" where each toy is a "2D but 3D" interpretation. Next, they plan to send screenshots of real toys to
+recreate in this style.
+**What**
+- `js/toys.js` (new): toys are tiny 3D models (SDF shapes) ray-marched into 32×32 sprites with stepped and dithered
+  shading, outlines, gloss, and a cast shadow on the shelf. There are 8 models (one per toy type) in 13 color ramps,
+  24 angles per turn, and plank/wallpaper tiles in the same 3/4 view.
+- New **TOYS** tab / `#/toys[/<dogId>]`: a bookcase that fills the screen, with dog chips, a plaque, toys sorted
+  best-first, hanging name tags (star for 5 bones), an ADD TOY slot, and at least 4 shelves.
+- Tap a toy → viewer sheet with the toy spinning on its own shelf. Toy editor: live 3D preview, 3D type picks, and
+  COLOR swatches (`toy.color`, optional). The dog profile shows 3D thumbnails and links to the wall.
+- Added PICO-8's 16 "secret" colors to `C`. The tab bar fits 4 tabs (narrower tabs).
+**Files:** `js/toys.js`, `js/app.js`, `js/pixel.js`, `styles.css`, `sw.js` (v14, toys.js in ASSETS), docs.
+**Verified:** all models checked from all 24 angles (rendered to a contact sheet); the wall at phone width; viewer
+spin, editor color logic (a picked color sticks; otherwise it follows the type), and saving, all in a private
+window with test dogs (deleted afterwards).
+**Notes:** the preview tool's screenshots hang whenever a sheet is open (and sometimes afterwards). Render sprites
+to a canvas instead. See [08-toys.md](context/08-toys.md) for how to add a custom model from a screenshot.
+
+---
+
 ## 2026-10-27: Back to brandonconcepcion.com/pawse (/dogs redirects)
 **Why:** The owner prefers the Pawse name in the URL, but /dogs should keep working too.
 **What:** Renamed the repo back `dogs` → `pawse`, so the app is at **https://brandonconcepcion.com/pawse/**. Created

@@ -17,7 +17,10 @@ All data is on the device. Nothing is sent anywhere.
 { id, name, breed, birthday /* 'YYYY-MM-DD' or '' */, coat /* key of COATS */, size /* regular|small|plump */,
   goalWeight? /* lb */, treat, notes,
   photo /* JPEG data URL, ≤700px */, photoPixel /* 28×28 PNG data URL, rebuilt if missing */,
-  createdAt, toys: [{ id, name, kind /* ball|rope|squeaky|plush|chew|frisbee|puzzle|other */, rating /* 1-5 */, notes, createdAt }] }
+  createdAt, toys: [{ id, name, kind /* ball|rope|squeaky|plush|chew|frisbee|puzzle|other */, color /* optional TOY_COLORS id */, rating /* 1-5 */, notes, createdAt }],
+  defaultToys /* ids of built-in toys already given to this dog (see 08-toys.md) */ }
+  // First visit on a device with no dogs: addDefaultDogs() adds Teddy + Cookie (id default-teddy / default-cookie),
+  // once (localStorage 'pawse.defaultDogsAdded'). No photos, weights, or sessions are ever seeded.
 
 // sessions
 { id, startedAt, endedAt /* ms */, duration /* seconds actually played */, planned /* seconds */,
