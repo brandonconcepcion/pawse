@@ -15,11 +15,11 @@ An 8-bit dog park play timer, plus a profile for each of your pups. It's a websi
 - Animation runs at 12 frames per second on purpose, so it feels like an old console.
 - Sounds are square-wave chiptunes made live in the browser (`js/sound.js`). Toggle them with **SFX ON/OFF**.
 
-**Live at https://brandonconcepcion.com/pawse/**
+**Live at https://brandonconcepcion.com/dogs/**
 
 ## Install on your iPhone
 
-1. Open **https://brandonconcepcion.com/pawse/** in **Safari**.
+1. Open **https://brandonconcepcion.com/dogs/** in **Safari**.
 2. Tap **Share** (the square with the arrow) → **Add to Home Screen** → **Add**.
 3. Open Pawse from your home screen.
 

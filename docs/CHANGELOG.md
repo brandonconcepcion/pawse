@@ -5,12 +5,20 @@ Add an entry for every meaningful change (see `AGENTS.md` → "Keeping the docs 
 
 ---
 
+## 2026-10-27: Moved to brandonconcepcion.com/dogs
+**What:** Renamed the GitHub repo `pawse` → `dogs` so the site lives at **https://brandonconcepcion.com/dogs/**
+(GitHub Pages uses the repo name as the path). The app name stays Pawse; the local folder stays `~/Developer/pawse`.
+**Notes:** The old `/pawse/` URL now 404s; it was only live for minutes. GitHub redirects git operations from the
+old repo name, but the local remote was updated anyway. All docs updated to the new URL.
+
+---
+
 ## 2026-10-27: Published on GitHub Pages
-**What:** Public repo `brandonconcepcion/pawse`, GitHub Pages from `main` / root. It's served on the owner's existing custom domain → **https://brandonconcepcion.com/pawse/**.
+**What:** Public repo `brandonconcepcion/dogs`, GitHub Pages from `main` / root. It's served on the owner's existing custom domain → **https://brandonconcepcion.com/dogs/**.
 Added `.nojekyll` (serve files as-is), `.gitignore`, and an http → https redirect in `index.html` (the domain
 doesn't enforce HTTPS, and the service worker and install need it). Commits use the GitHub noreply email so the
 owner's work email isn't public.
-**Notes:** All app paths are relative, so it works under `/pawse/`. Storage is per-origin: the owner's dogs at
+**Notes:** All app paths are relative, so it works under `/dogs/`. Storage is per-origin: the owner's dogs at
 `localhost:8642` must be moved with SAVE BACKUP → LOAD BACKUP. Future deploys = push to `main`, and bump `CACHE`.
 
 ---
