@@ -37,6 +37,8 @@ const TOY_KINDS = [
   { id: 'dogquila', label: 'Dogquila', icon: 'plush' },
   { id: 'lamb-chop', label: 'Lamb Chop', icon: 'plush' },
   { id: 'pup-light', label: 'Pup Light', icon: 'plush' },
+  { id: 'blue-rubbin', label: 'Blue Rubbin', icon: 'plush' },
+  { id: 'chuckit', label: 'Chuckit!', icon: 'ball' },
 ];
 
 function toyIcon(kind) {
@@ -107,6 +109,28 @@ const DEFAULT_TOYS = [
       color: 'blue',
       rating: 4,
       notes: 'Plush beer can, a Bud Light parody. Crinkly and squeaky.',
+    },
+  },
+  {
+    dog: 'teddy',
+    toy: {
+      id: 'default-blue-rubbin',
+      name: 'Pups Blue Rubbin',
+      kind: 'blue-rubbin',
+      color: 'white',
+      rating: 4,
+      notes: 'Plush beer can, a Pabst Blue Ribbon parody. Pairs with the Pup Light.',
+    },
+  },
+  {
+    dog: 'teddy',
+    toy: {
+      id: 'default-chuckit',
+      name: 'Chuckit!',
+      kind: 'chuckit',
+      color: 'blue',
+      rating: 4,
+      notes: 'Ball launcher and its orange ball, side by side. Takes two spots on the shelf.',
     },
   },
 ];

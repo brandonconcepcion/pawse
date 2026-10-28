@@ -5,6 +5,36 @@ Add an entry for every meaningful change (see `AGENTS.md` → "Keeping the docs 
 
 ---
 
+## 2026-10-28: Chuckit! lies down across two slots
+**Why:** Standing up in one slot, the launcher had to be squashed and the owner wanted to see the whole thing.
+**What:** `chuckit` is now `span: 2` (64×48 sprite). The launcher lies on its side at full length: the cup faces you, the handle
+curves down from the cup to the shelf, and the grip stands on its edge so its slot shows. The ball sits at the left end.
+Then the owner asked for a longer handle: the straight part is now 14 long instead of 10, and everything shifted 2 left to stay
+centered (it fills columns 4–59 of 64 over the whole turn). Cache is `pawse-v42`.
+**Notes:** Lying the grip flat hid the slot, because the camera pitch is only ~29°. Standing it on its edge shows the slot.
+
+---
+
+## 2026-10-28: Chuckit! launcher + ball
+**Why:** The owner sent a photo of a Chuckit! launcher holding its ball and wanted both pieces shown separately, in the same shelf spot.
+**What:** `toys.js`: new `chuckit` model. The launcher stands with its empty cup open toward the ball, and the ball sits beside it on the shelf.
+New non-pickable ramps `flame` (red-orange ball) and `aqua` (light blue seam). The `ball` icon is used in `TOY_KINDS`, and it's a
+Teddy default (`default-chuckit`, rated 4). Cache is `pawse-v40`.
+**Notes:** The `orange` ramp read yellow and `salmon` read pink for the ball's lit side; `coral` matches the real red-orange.
+The cup faces the ball: facing the viewer made it read like a racket or magnifying glass.
+
+---
+
+## 2026-10-28: Pups Blue Rubbin beer can
+**Why:** The owner sent a photo of Nestpark's "Pups Blue Rubbin" plush can (a Pabst Blue Ribbon parody), the Pup Light's partner.
+**What:** `toys.js`: new `blue-rubbin` model (same can shape as `pup-light`, white with a red sash, blue circle + banner,
+bones, wreath, red bottom line) and `DEFAULT_COLOR` white. `app.js`: `TOY_KINDS` entry and a Teddy default
+(`default-blue-rubbin`, rated 4). Cache is `pawse-v39`.
+**Notes:** At 32px the lettering only works as one-pixel dashes; `letters()` from the Pup Light (3-on, 1-off) turned to
+mush here because the gaps are under a pixel. `face` stays 0: turning it either way pushes the circle into the shaded side.
+
+---
+
 ## 2026-10-28: Cookie portraits join Teddy's on the toy wall (8 portraits)
 **Why:** The owner sent a Cookie photo and wanted it pixelated into the wall too, going past the old five-portrait limit.
 **What:** `toys.js`: `PORTRAIT` is now `TEDDY_PORTRAIT`, plus a new `COOKIE_PORTRAIT`; `portraitURL(dog = 'teddy')`

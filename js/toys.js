@@ -37,6 +37,8 @@ const RAMPS = {
   fur: [C.darkBrown, C.rust, C.brown, C.tan],
   lash: [C.black, C.black, C.black, C.black], // eyelashes stay solid black even in the light
   royal: [C.navy, C.cobalt, C.cobalt, C.blue], // a deeper blue than the pickable one (the Pup Light can), still lit at the edges
+  flame: [C.rust, C.brown, C.tangerine, C.coral], // the Chuckit! ball's red-orange
+  aqua: [C.cobalt, C.blue, C.sky3, C.sky4], // its light blue seam
 };
 
 // ---------------------------------------------------------------------------
@@ -473,12 +475,85 @@ export const MODELS = {
       parts: [disc(0, 10.6, 0, 5.7, 10.1, 1.7, label)], // a plush can, kept slender (smooth, so the print stays crisp)
     };
   },
+
+  // Nestpark's "Pups Blue Rubbin" plush beer can (a Pabst Blue Ribbon parody): a white can with a red sash winding
+  // around it, a big blue circle with a white "Pups" and paw, a blue BLUE RUBBIN banner across it, two blue bones, a blue
+  // wreath, a thin red line near the bottom, and soft gray rims. Same can shape as the Pup Light, so they look like a
+  // pair. `color` recolors the can (the blue print turns white on a blue can).
+  'blue-rubbin': (color) => {
+    const ink = color === 'blue' ? 'white' : 'royal';
+    const sash = accent(color, 'red', 'royal');
+    // Lettering this small becomes a dashed white line: one pixel of letter, one of gap.
+    const dashes = (x, half, shift = 0) => Math.abs(x) < half && Math.floor(x + 20 + shift) % 2 === 0;
+    const label = (x, y, z) => {
+      if (y < 1.5 || y > 19.6) return 'gray'; // the rims
+      const side = z < 0 ? -x : x; // the back is printed the same, so it reads when it spins
+      const front = Math.abs(z) > 2.2;
+      if (front) {
+        if (y > 10.6 && y < 13.8 && Math.abs(side) < 5.6) {
+          return y > 11.6 && y < 12.9 && dashes(side, 4.4) ? 'white' : ink; // the BLUE RUBBIN banner
+        }
+        if (Math.hypot(side, y - 13.2) < 4.8) {
+          if (y > 15 && y < 16.3 && dashes(side, 2.4, 1)) return 'white'; // "Pups" (staggered, so the letters don't line up)
+          if (Math.hypot(side, y - 9.6) < 1.2) return 'white'; // the paw pad peeking out under the banner
+          return ink; // the big circle
+        }
+        if (y > 5.8 && y < 7.4 && Math.abs(Math.abs(side) - 2.4) < 1.6) return ink; // two bones
+        if (y > 4 && y < 5 && Math.abs(side) < 4.4 && Math.floor(side + 10) % 2 === 0) return ink; // the wreath
+      }
+      if (y > 2.2 && y < 2.8) return sash; // the thin red line near the bottom
+      if (Math.abs(y - 11.5 + 1.1 * side) < 1.3) return sash; // the red sash, winding behind the circle
+      return color;
+    };
+    return {
+      parts: [disc(0, 10.6, 0, 5.7, 10.1, 1.7, label)],
+    };
+  },
+
+  // Chuckit! ball launcher and its ball, as two separate pieces across two shelf slots: the blue launcher lies on its
+  // side at full length (cup, gently curved handle, and the flat hand grip with its slot), its empty cup facing you, next
+  // to the red-orange ball (light blue seam, white "Chuckit!" patch). `color` recolors the launcher
+  // (the default blue is the deeper royal blue of the real one).
+  chuckit: (color) => {
+    const plastic = color === 'blue' ? 'royal' : color;
+    const [bx, by, bz, br] = [-21.5, 5.2, 1, 5.2]; // the ball
+    const ball = (x, y, z) => {
+      const nx = (x - bx) / br;
+      const ny = (y - by) / br;
+      const nz = (z - bz) / br;
+      if (nx * 0.15 + ny * 0.3 + nz * 0.94 > 0.86 && Math.abs(ny - 0.3) < 0.2) return 'white'; // the logo, facing you
+      return Math.abs(ny - 0.5 * Math.cos(2 * Math.atan2(nz, nx) + 1.4)) < 0.17 ? 'aqua' : 'flame';
+    };
+    // The cup: a ball-sized shell lying on its side, open toward you (and a little toward the ball), like the photo.
+    const [cx, cy, cz, cr] = [-8.5, 5.35, 0, 4.6];
+    const open = [-0.45, 0.3, 0.85];
+    const cup = {
+      mat: plastic,
+      d: (x, y, z) => {
+        const shell = Math.abs(Math.hypot(x - cx, y - cy, z - cz) - cr) - 0.75;
+        const front = (x - cx) * open[0] + (y - cy) * open[1] + (z - cz) * open[2] - 0.3 * cr;
+        return Math.max(shell, front);
+      },
+    };
+    return {
+      span: 2,
+      parts: [
+        sphere(bx, by, bz, br, ball),
+        cup,
+        capsule(-4.2, 4.6, 0, 4, 2.4, 0, 0.95, plastic), // the handle, curving down from the cup...
+        capsule(4, 2.4, 0, 18, 1.8, 0, 0.95, plastic), // ...to lie along the shelf
+        ellipsoid(21.8, 2.7, 0, 4.4, 2.7, 0.9, plastic), // the flat grip, on its edge so you see the slot
+      ],
+      cuts: [ellipsoid(22.6, 2.9, 0, 2.6, 1, 2, plastic)], // the slot in the grip
+    };
+  },
 };
 
 export const DEFAULT_COLOR = {
   ball: 'lime', rope: 'blue', squeaky: 'yellow', plush: 'brown',
   chew: 'tan', frisbee: 'orange', puzzle: 'red', other: 'pink',
   'sweater-bear': 'red', 'nacho-chip': 'orange', dogquila: 'gray', 'lamb-chop': 'white', 'pup-light': 'blue',
+  'blue-rubbin': 'white', chuckit: 'blue',
 };
 
 /** The model and color a saved toy uses. */
