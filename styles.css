@@ -645,7 +645,7 @@ body.immersive .play-bottom > * { pointer-events: auto; } /* ...except on the pa
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  gap: 6px;
+  gap: 4px;
   height: var(--tabbar-h);
   padding: 10px 0 env(safe-area-inset-bottom);
   background: var(--cream);
@@ -655,8 +655,10 @@ body.immersive .play-bottom > * { pointer-events: auto; } /* ...except on the pa
   display: grid;
   justify-items: center;
   gap: 6px;
-  min-width: 78px;
-  padding: 4px 4px;
+  flex: 1 1 0;
+  max-width: 84px;
+  min-width: 0;
+  padding: 4px 2px;
   text-decoration: none;
   font-family: var(--pixel-font);
   font-size: 9px;
@@ -665,6 +667,7 @@ body.immersive .play-bottom > * { pointer-events: auto; } /* ...except on the pa
 .tabbar a img { opacity: 0.45; filter: grayscale(1); }
 .tabbar a.active { background: var(--yellow); color: var(--ink); box-shadow: 0 0 0 3px var(--ink); }
 .tabbar a.active img { opacity: 1; filter: none; }
+@media (max-width: 380px) { .tabbar a { font-size: 8px; } }
 
 /* ---------- Animations (stepped, like a sprite) ---------- */
 
@@ -682,7 +685,6 @@ body.immersive .play-bottom > * { pointer-events: auto; } /* ...except on the pa
 /* ---------- Gym ---------- */
 
 .header-actions { display: flex; align-items: center; gap: 4px; }
-.gym-btn img { width: 20px; height: 20px; }
 
 .gym-logo { color: var(--pink); text-shadow:
   3px 0 0 var(--ink), -3px 0 0 var(--ink), 0 3px 0 var(--ink), 0 -3px 0 var(--ink),

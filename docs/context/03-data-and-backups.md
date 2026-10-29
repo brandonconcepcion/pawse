@@ -55,7 +55,7 @@ regenerated from `photo`.
 | `pawse.timer` | timer.js | timer snapshot (see play timer doc) |
 | `pawse.minutes` | app.js | last chosen session length |
 | `pawse.muted` | sound.js | `'1'` when SFX are off |
-| `pawse.area` | app.js | `play` / `gym` / `gymStats`: where the Play tab returns |
+| `pawse.area` | (retired) | Old: which area the Play tab returned to. No longer read or written; may linger on old devices |
 | `pawse.gymDog` | app.js | id of the gym buddy (default: dog named Cookie, else first Plump dog, else first dog) |
 | `pawse.installHintDismissed` | app.js | hides the Safari install hint |
 

@@ -35,6 +35,16 @@ mush here because the gaps are under a pixel. `face` stays 0: turning it either 
 
 ---
 
+## 2026-10-28: The gym is its own tab
+**Why:** The owner wanted GYM as a tab in the bottom bar instead of a button in the park header sharing the PLAY tab.
+**What:** `renderTabBar()` now draws five fixed tabs (PLAY · GYM · MY DOGS · TOYS · LOG) once. Removed `AREA_KEY` / `AREA_HASH` /
+`lastArea()` and the park header's GYM button and the gym header's ◀ PARK button (an empty `<span>` keeps the title centered).
+`gymStats` highlights the GYM tab. `styles.css`: tabs now `flex: 1 1 0; max-width: 84px; min-width: 0`, 4px gap, 8px font
+under 380px wide, so five fit a small phone. Removed `.gym-btn`. Cache `pawse-v39`.
+**Notes:** `pawse.area` may linger in localStorage on old devices; nothing reads it.
+
+---
+
 ## 2026-10-28: Cookie portraits join Teddy's on the toy wall (8 portraits)
 **Why:** The owner sent a Cookie photo and wanted it pixelated into the wall too, going past the old five-portrait limit.
 **What:** `toys.js`: `PORTRAIT` is now `TEDDY_PORTRAIT`, plus a new `COOKIE_PORTRAIT`; `portraitURL(dog = 'teddy')`

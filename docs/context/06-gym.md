@@ -1,8 +1,7 @@
 # Gym: `js/gym-scene.js`, `js/gym.js`, gym UI in `app.js`
 
 The gym is a second immersive area (route `#/gym`) where **all dogs** work out, plus a weight-loss tracker
-for one **gym buddy** (default: Cookie). Reached from the **GYM** button in the park header; the Play tab
-remembers you were here.
+for one **gym buddy** (default: Cookie). Reached from the **GYM** tab at the bottom (it used to be a button in the park header).
 
 ## Scene: `GymScene extends ParkScene` (`js/gym-scene.js`)
 

@@ -275,11 +275,6 @@ function dayLabel(ts) {
 // App state & routing
 // ---------------------------------------------------------------------------
 
-// The Play tab remembers whether you were last at the park or in the gym (even after closing the app).
-const AREA_KEY = 'pawse.area';
-const AREA_HASH = { play: '#/play', gym: '#/gym', gymStats: '#/gym/stats' };
-const lastArea = () => (AREA_HASH[localStorage.getItem(AREA_KEY)] ? localStorage.getItem(AREA_KEY) : 'play');
-
 const state = {
   dogs: [],
   sessions: [],
@@ -320,9 +315,8 @@ const setMinutes = (m) => localStorage.setItem('pawse.minutes', String(m));
 
 function render() {
   const { route } = state;
-  if (AREA_HASH[route.name]) localStorage.setItem(AREA_KEY, route.name);
   renderTabBar();
-  const tab = { dog: 'dogs', gym: 'play', gymStats: 'play' }[route.name] ?? route.name;
+  const tab = { dog: 'dogs', gymStats: 'gym' }[route.name] ?? route.name;
   document.querySelectorAll('.tabbar a').forEach((a) => a.classList.toggle('active', a.dataset.tab === tab));
   document.body.classList.toggle('immersive', route.name === 'play' || route.name === 'gym');
   document.body.classList.toggle('toy-room', route.name === 'toys');
@@ -426,7 +420,6 @@ function renderPlay() {
       <header class="page-header">
         <h1 class="logo">PAWSE</h1>
         <div class="header-actions">
-          <a href="#/gym" class="px-btn tiny gym-btn" aria-label="Gym">${pixelImg(iconURL('gym'), 20)} GYM</a>
           <button class="px-btn tiny" data-action="toggle-sound" aria-label="Sound">${isMuted() ? 'SFX OFF' : 'SFX ON'}</button>
         </div>
       </header>
@@ -1378,7 +1371,7 @@ function renderGym() {
   $view.innerHTML = `
     <div class="play-top">
       <header class="page-header">
-        <a href="#/play" class="px-btn tiny">◀ PARK</a>
+        <span></span>
         <h1 class="logo gym-logo">GYM</h1>
         <a href="#/gym/stats" class="px-btn tiny">STATS</a>
       </header>
@@ -1886,17 +1879,14 @@ function installHint() {
 // Start up
 // ---------------------------------------------------------------------------
 
-let tabBarArea = null;
+let tabBarDrawn = false;
 
 function renderTabBar() {
-  const area = lastArea();
-  if (area === tabBarArea) return;
-  tabBarArea = area;
-  const first = area === 'play'
-    ? `<a href="#/play" data-tab="play">${pixelImg(iconURL('paw'), 24)}<span>PLAY</span></a>`
-    : `<a href="${AREA_HASH[area]}" data-tab="play">${pixelImg(iconURL('gym'), 20)}<span>GYM</span></a>`;
+  if (tabBarDrawn) return;
+  tabBarDrawn = true;
   document.querySelector('.tabbar').innerHTML = `
-    ${first}
+    <a href="#/play" data-tab="play">${pixelImg(iconURL('paw'), 24)}<span>PLAY</span></a>
+    <a href="#/gym" data-tab="gym">${pixelImg(iconURL('gym'), 24)}<span>GYM</span></a>
     <a href="#/dogs" data-tab="dogs">${pixelImg(dogTileURL('golden'), 24)}<span>MY DOGS</span></a>
     <a href="#/toys" data-tab="toys">${pixelImg(iconURL('ball'), 24)}<span>TOYS</span></a>
     <a href="#/log" data-tab="log">${pixelImg(iconURL('log'), 24)}<span>LOG</span></a>`;

@@ -26,7 +26,7 @@ the gym UI, and backups. It imports everything else. Sections are marked with ba
 <canvas id="park">        full-screen scene canvas (shared by park + gym), hidden on other screens
 <div id="dog-labels">     DOM name tags positioned over dogs each frame
 <main id="view">          current screen, re-rendered as innerHTML
-<nav class="tabbar">      PLAY/GYM · MY DOGS · TOYS · LOG (built by renderTabBar)
+<nav class="tabbar">      PLAY · GYM · MY DOGS · TOYS · LOG (built once by renderTabBar)
 <div id="overlay">        sheets (forms) and the celebration screen
 ```
 
@@ -48,8 +48,8 @@ Hash-based. `parseRoute()` → `{ name, id? }`:
 `render()` is the single entry point. It records the area, updates the tab bar, toggles `body.immersive`,
 starts/stops the right scene, and calls the screen's `render*()` function. `hashchange` → `render()`.
 
-The first tab is **PLAY** (paw) or **GYM** (dumbbell) depending on the remembered area (`localStorage['pawse.area']`),
-so switching tabs and coming back returns you to the gym. (The remembered area no longer decides the landing page.) `renderTabBar()` only rebuilds when that area changes.
+Five tabs: **PLAY** (paw), **GYM** (dumbbell), MY DOGS, TOYS, LOG. The gym is its own tab (stats screens highlight it too); there is no longer a
+"remembered area" (`pawse.area` is unused, and old values are ignored). The tabs share the bar width (`flex: 1 1 0`, max 84px) so five fit a 320px phone.
 
 ## State
 
