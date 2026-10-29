@@ -60,8 +60,7 @@ Sanity test used during development: synthetic data where 200 g/day is the true 
   **LOG TODAY / EDIT TODAY**. `updateGymStatus()` rotates motivational lines every 4s and reminds about
   today's weigh-in.
 - `renderGymStats()`: buddy picker, goal weight (saved as `dog.goalWeight`), summary tiles, two SVG charts (last
-  56 days: weight dots + weekly average line + dashed goal; food bars + weekly average), the food-vs-weight
-  insight + pace (vs. the 1–2%/week guideline, "check with your vet"), a week-by-week table, and the daily log
+  56 days: weight dots + weekly average line + dashed goal; food bars + weekly average), a week-by-week table, and the daily log
   (tap a row to edit).
 - `openWeightLog(dog, date)`: date (max today), weight (lb), food (g). Changing the date prefills that day.
   Either value may be blank. `submitWeight` validates (weight ≤ 300, food ≤ 5000), rounds, and upserts.

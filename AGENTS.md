@@ -25,6 +25,8 @@ Main features:
    [`.claude/skills/pawse-toy-maker/SKILL.md`](.claude/skills/pawse-toy-maker/SKILL.md)**; renderer details are in
    [toys](docs/context/08-toys.md).
 5. **Log:** history of every play session.
+6. **Shop:** the reward system. Dogs earn **sticks** (play minutes, walks, new tricks) and spend them on prizes. See
+   [sticks](docs/context/09-sticks.md). Walks can sync from Strava ([strava](docs/context/10-strava.md)).
 
 Everything is stored on the device (IndexedDB + localStorage). There is no server, account, or build step.
 
@@ -61,6 +63,8 @@ Plain HTML/CSS/JS with native ES modules. No npm, no bundler. Syntax-check a fil
 | `js/gym-scene.js` | `GymScene extends ParkScene`: gym room, equipment, activities | [gym](docs/context/06-gym.md) |
 | `js/gym.js` | Pure math: weekly averages, pace, food-vs-weight correlation | [gym](docs/context/06-gym.md) |
 | `tools/toy-preview.mjs` | Node script: renders a toy model from several angles to a PNG (no browser) | [toys](docs/context/08-toys.md) |
+| `js/strava.js`, `tools/strava-worker/worker.js` | Strava walk sync (free Cloudflare Worker holds the secret) | [strava](docs/context/10-strava.md) |
+| `js/sticks.js` | Stick rates, default prizes, `stickTotals()` (earned is calculated from the logs) | [sticks](docs/context/09-sticks.md) |
 | `js/toys.js` | 3D toy models ray-marched into pixel sprites, toy colors, shelf/wallpaper tiles | [toys](docs/context/08-toys.md) |
 | `styles.css` | The whole 8-bit UI system | [PWA, offline & styles](docs/context/07-pwa-offline-and-styles.md) |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Offline support and home-screen install | [PWA, offline & styles](docs/context/07-pwa-offline-and-styles.md) |

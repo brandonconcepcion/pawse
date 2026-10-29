@@ -40,6 +40,6 @@ Layout areas:
 - Sheets: `.backdrop` + `.sheet` (slides up), `.sheet-bar`, `.group` + `.field` form rows, `.pick` grids
   (coat/size/toy kind), `.rating` bones.
 - Gym-specific: `.gym-hud`, `.gym-stats`, `.chart-svg` (SVG charts with `shape-rendering: crispEdges`),
-  `.week-table`, `.entry-row`, `.insight`.
+  `.week-table`, `.entry-row`.
 
 Inputs use VT323 at 22–24px, which keeps iOS from zooming into fields (it zooms below 16px).

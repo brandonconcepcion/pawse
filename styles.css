@@ -394,6 +394,38 @@ body.immersive .play-bottom > * { pointer-events: auto; } /* ...except on the pa
 .badge.clear { background: var(--yellow); color: var(--ink); }
 .badge.early { background: var(--silver); color: var(--ink); }
 
+/* ---------- Sticks (rewards) ---------- */
+
+.sticks-card { padding: 14px; margin-top: 14px; }
+.sticks-card .label { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.stick-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 6px; margin: 0;
+  border: 0; border-bottom: 3px dotted rgba(29, 43, 83, 0.25); background: transparent;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.stick-row.active { background: var(--yellow); box-shadow: inset 0 0 0 3px var(--ink); }
+.stick-who { flex: 1; min-width: 0; display: grid; }
+.new-prize { margin: 10px 0 8px; width: 100%; }
+.stick-count { display: flex; align-items: center; gap: 6px; font-family: var(--pixel-font); font-size: 14px; font-weight: normal; flex: none; }
+.stick-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.stick-buttons .px-btn { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.stick-amount { font-family: var(--pixel-font); font-size: 11px; font-weight: normal; color: var(--forest); flex: none; }
+.stick-amount.spent { color: var(--red); }
+.shop-empty { padding: 10px 12px; }
+.field input[type="checkbox"] { flex: none; width: 24px; height: 24px; accent-color: var(--forest); }
+.field select { flex: 1; min-width: 0; font-family: var(--text-font); font-size: 24px; border: 0; background: transparent; outline: none; }
+
+/* Strava sync */
+.strava-status { padding: 8px 12px 0; display: flex; align-items: center; gap: 8px; }
+.strava-message { color: var(--ink); background: var(--yellow); padding: 8px 10px; margin: 8px 4px; }
+.strava-row { padding: 8px 10px; border-bottom: 3px dotted rgba(29, 43, 83, 0.25); display: grid; gap: 6px; }
+.strava-row:last-child { border-bottom: 0; }
+.strava-pick { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.strava-pick > span { display: grid; min-width: 0; }
+.strava-pick input { flex: none; width: 24px; height: 24px; accent-color: var(--forest); }
+.strava-row select { font-family: var(--text-font); font-size: 22px; margin-left: 34px; max-width: calc(100% - 34px); }
+.strava-btn { --face: #fc4c02; --shade: #b53600; --light: #ff9a6a; color: #fff; }
+
 /* ---------- Avatar ---------- */
 
 .avatar {
@@ -746,8 +778,6 @@ body.immersive .play-bottom > * { pointer-events: auto; } /* ...except on the pa
 .legend .sw.goal { background: repeating-linear-gradient(90deg, var(--green) 0 4px, transparent 4px 7px); height: 3px; }
 .legend .sw.bar { background: var(--orange); }
 
-.insight p { margin: 8px 0; line-height: 1.2; }
-.insight b { color: var(--plum); font-weight: normal; text-decoration: underline; }
 
 .week-table { width: 100%; border-collapse: collapse; font-size: 20px; }
 .week-table th { font-family: var(--pixel-font); font-size: 7px; text-align: left; color: var(--slate); padding: 4px 2px; font-weight: normal; }

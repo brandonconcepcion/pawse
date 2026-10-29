@@ -2,9 +2,11 @@
 //   dogs:     one record per dog (profile + toys)
 //   sessions: one record per play session (who played, when, for how long)
 //   weights:  one record per dog per day (body weight in lb, food in grams)
+//   rewards:  walks, new tricks and prize redemptions (see sticks.js)
+//   prizes:   the Prize Shop's list of things sticks can buy
 
 const DB_NAME = 'pawse';
-const VERSION = 3;
+const VERSION = 4;
 
 let dbPromise;
 
@@ -20,6 +22,8 @@ function openDB() {
       if (!db.objectStoreNames.contains('weights')) {
         db.createObjectStore('weights', { keyPath: 'id' }).createIndex('dogId', 'dogId');
       }
+      if (!db.objectStoreNames.contains('rewards')) db.createObjectStore('rewards', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('prizes')) db.createObjectStore('prizes', { keyPath: 'id' });
       if (event.oldVersion === 1) moveSessionsOutOfDogs(request.transaction);
     };
     request.onsuccess = () => {
@@ -126,14 +130,43 @@ export const saveWeight = (entry) => transact(['weights'], 'readwrite', ({ weigh
 
 export const deleteWeight = (id) => transact(['weights'], 'readwrite', ({ weights }) => weights.delete(id));
 
-/** Replaces everything at once (used when restoring a backup). */
-export function replaceEverything(dogList, sessionList, weightList = []) {
-  return transact(['dogs', 'sessions', 'weights'], 'readwrite', ({ dogs, sessions, weights }) => {
+export async function loadRewards() {
+  const rewards = await transact(['rewards'], 'readonly', ({ rewards }) => rewards.getAll());
+  return rewards.sort((a, b) => b.at - a.at);
+}
+
+/** { id, type: 'walk' | 'trick' | 'redeem', at: ms, dogIds: [], dogNames: [], miles? | name? | prizeName?, cost? } */
+export const saveReward = (reward) => transact(['rewards'], 'readwrite', ({ rewards }) => rewards.put(reward));
+
+export const deleteReward = (id) => transact(['rewards'], 'readwrite', ({ rewards }) => rewards.delete(id));
+
+export async function loadPrizes() {
+  const prizes = await transact(['prizes'], 'readonly', ({ prizes }) => prizes.getAll());
+  return prizes.sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name));
+}
+
+/** { id, name, cost } */
+export const savePrize = (prize) => transact(['prizes'], 'readwrite', ({ prizes }) => prizes.put(prize));
+
+export const deletePrize = (id) => transact(['prizes'], 'readwrite', ({ prizes }) => prizes.delete(id));
+
+/**
+ * Replaces everything at once (used when restoring a backup). `prizeList` is undefined for backups made before
+ * the Prize Shop existed: then the current prizes are kept instead of being cleared.
+ */
+export function replaceEverything(dogList, sessionList, weightList = [], rewardList = [], prizeList) {
+  return transact(['dogs', 'sessions', 'weights', 'rewards', 'prizes'], 'readwrite', ({ dogs, sessions, weights, rewards, prizes }) => {
     dogs.clear();
     sessions.clear();
     weights.clear();
+    rewards.clear();
     for (const dog of dogList) dogs.put(dog);
     for (const session of sessionList) sessions.put(session);
     for (const entry of weightList) weights.put(entry);
+    for (const reward of rewardList) rewards.put(reward);
+    if (prizeList) {
+      prizes.clear();
+      for (const prize of prizeList) prizes.put(prize);
+    }
   });
 }

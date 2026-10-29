@@ -2,6 +2,7 @@ import {
   loadDogs, saveDog, deleteDog,
   loadSessions, saveSession, deleteSession,
   loadWeights, saveWeight, deleteWeight,
+  loadRewards, saveReward, deleteReward, loadPrizes, savePrize, deletePrize,
   replaceEverything, legacySessions,
 } from './db.js';
 import { timer } from './timer.js';
@@ -10,6 +11,11 @@ import { COATS, SIZES, iconURL, dogTileURL, dogSpriteURL, pixelatePhoto } from '
 import { ParkScene } from './scene.js';
 import { GymScene } from './gym-scene.js';
 import { TOY_COLORS, DEFAULT_COLOR, FRAMES, SPRITE, SHELF_TOP_ROW, toyLook, toySpriteURL, toySpan, toySize, WIDE_PAD_ROWS, shelfFrame, plankURL, wallpaperURL, portraitURL } from './toys.js';
+import { RATES, DEFAULT_PRIZES, walkSticks, stickTotals } from './sticks.js';
+import {
+  stravaStatus, stravaSetup, saveStravaSetup, stravaLoginURL, isStravaRedirect, finishStravaLogin,
+  fetchStravaWalks, finishStravaSync, disconnectStrava, dogsInTitle,
+} from './strava.js';
 import { weeklySummary, foodVsWeight, recentPace, goalProgress, weekOf, isoDate, toDate } from './gym.js';
 
 // ---------------------------------------------------------------------------
@@ -291,6 +297,8 @@ const state = {
   dogs: [],
   sessions: [],
   weights: [],
+  rewards: [], // walks, new tricks and prize redemptions (see sticks.js)
+  prizes: [], // the Prize Shop
   route: parseRoute(),
   calling: false, // true while the "wanna play?" call is playing
 };
@@ -317,6 +325,7 @@ function parseRoute() {
   if (section === 'dogs') return { name: 'dogs' };
   if (section === 'log') return { name: 'log' };
   if (section === 'toys') return { name: 'toys' };
+  if (section === 'shop') return { name: 'shop' };
   if (section === 'gym') return { name: id === 'stats' ? 'gymStats' : 'gym' };
   return { name: 'play' };
 }
@@ -351,6 +360,7 @@ function render() {
   else if (route.name === 'gymStats') renderGymStats();
   else if (route.name === 'log') renderLog();
   else if (route.name === 'toys') renderToys();
+  else if (route.name === 'shop') renderShop();
   else renderDogProfile(route.id);
 }
 
@@ -609,6 +619,7 @@ function showCelebration() {
         </div>
         <h1>PLAY TIME<br>OVER!</h1>
         <p class="sub">${subtitle}</p>
+        ${playedDogs.length ? `<div class="px-box water">${stickIcon(16)} +${Math.floor(timer.total / 60) * RATES.perMinute} sticks ${playedDogs.length > 1 ? 'each' : ''}</div>` : ''}
         <div class="px-box water">${pixelImg(iconURL('heart'), 16)} Time for water & a rest</div>
       </div>
       <div class="celebrate-actions">
@@ -791,6 +802,297 @@ function renderLog() {
 
     ${list}
     ${backupBox()}`;
+}
+
+// ---------------------------------------------------------------------------
+// Shop (the SHOP tab): sticks earned by play, walks and new tricks, spent on prizes
+// ---------------------------------------------------------------------------
+
+const stickIcon = (size = 16) => pixelImg(iconURL('stick'), size);
+const rewardTime = (iso) => (iso === todayISO() ? Date.now() : toDate(iso).setHours(12, 0, 0, 0));
+const namesOf = (dogs) => dogs.map((d) => d.name);
+let shopDogId = null; // whose sticks the shop is spending
+
+/** The pup whose sticks the shop is showing (Teddy until you tap another). */
+function shopDog() {
+  const dog = findDog(shopDogId) ?? state.dogs.find((d) => /teddy/i.test(d.name)) ?? state.dogs[0];
+  shopDogId = dog?.id ?? null;
+  return dog;
+}
+
+/** The SHOP tab: everyone's sticks, the prizes the chosen pup can buy, and the latest walks / tricks / prizes. */
+function renderShop() {
+  const dog = shopDog();
+  if (!dog) {
+    $view.innerHTML = `
+      <header class="page-header"><h1 class="logo">SHOP</h1></header>
+      <div class="empty px-box">
+        ${pixelImg(iconURL('stick'), 96)}
+        <h2>NO PUPS YET</h2>
+        <p class="muted">Add a dog first. They earn sticks for play, walks and new tricks.</p>
+        <a class="px-btn go" href="#/dogs">+ ADD A DOG</a>
+      </div>`;
+    return;
+  }
+  const rows = state.dogs.map((d) => {
+    const t = stickTotals(d.id, state.sessions, state.rewards);
+    return `
+      <button class="stick-row ${d.id === dog.id ? 'active' : ''}" data-action="shop-pick" data-id="${escapeHTML(d.id)}" aria-pressed="${d.id === dog.id}">
+        ${avatar(d, 36)}
+        <span class="stick-who">
+          <span class="session-who">${escapeHTML(d.name)}</span>
+          <span class="muted">earned ${t.earned} · spent ${t.spent}</span>
+        </span>
+        <b class="stick-count">${stickIcon(20)} ${t.balance}</b>
+      </button>`;
+  }).join('');
+  const { balance } = stickTotals(dog.id, state.sessions, state.rewards);
+
+  const timeFormat = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+  const feed = state.rewards.slice(0, 12).map((r) => {
+    const who = joinNames(r.dogNames) || 'A pup';
+    const title = {
+      walk: `Walk · ${r.miles} mi${r.stravaId ? ' · Strava' : ''}`,
+      trick: `New trick · ${escapeHTML(r.name)}`,
+      redeem: `${pixelImg(iconURL('gift'), 14)} ${escapeHTML(r.prizeName)}`,
+    }[r.type];
+    const amount = r.type === 'redeem' ? `-${r.cost}` : `+${r.type === 'walk' ? walkSticks(r) : RATES.perTrick}`;
+    return `
+      <div class="session-row">
+        <div class="session-text">
+          <div class="session-who">${title}</div>
+          <div class="muted">${dayLabel(r.at)} ${timeFormat.format(new Date(r.at))} · ${escapeHTML(who)}</div>
+        </div>
+        <b class="stick-amount ${r.type === 'redeem' ? 'spent' : ''}">${amount}</b>
+        <button class="px-btn tiny" data-action="delete-reward" data-id="${escapeHTML(r.id)}" aria-label="Delete">X</button>
+      </div>`;
+  }).join('');
+
+  $view.innerHTML = `
+    <header class="page-header"><h1 class="logo">SHOP</h1></header>
+
+    <section class="px-box sticks-card">
+      <h2 class="label">${stickIcon(16)} STICKS</h2>
+      ${rows}
+      <div class="stick-buttons">
+        <button class="px-btn small" data-action="log-walk">+ WALK</button>
+        <button class="px-btn small" data-action="log-trick">+ TRICK</button>
+        <button class="px-btn small strava-btn" data-action="strava-open">STRAVA</button>
+      </div>
+      <p class="tip">${RATES.perMinute} stick a minute of play · ${RATES.perTenthMile} for every 0.1 mile walked · ${RATES.perTrick} for a new trick.</p>
+    </section>
+
+    <h3 class="label day-label">${pixelImg(iconURL('gift'), 16)} PRIZES FOR ${escapeHTML(dog.name.toUpperCase())}</h3>
+    <div class="px-box session-list">
+      ${state.prizes.length ? state.prizes.map((prize) => `
+        <div class="session-row">
+          <div class="session-text">
+            <div class="session-who">${escapeHTML(prize.name)}</div>
+            <div class="muted">${stickIcon(12)} ${prize.cost}</div>
+          </div>
+          <button class="px-btn tiny go" data-action="redeem" data-id="${escapeHTML(prize.id)}" ${balance < prize.cost ? 'disabled' : ''}>${balance < prize.cost ? `${prize.cost - balance} MORE` : 'REDEEM'}</button>
+          <button class="px-btn tiny" data-action="delete-prize" data-id="${escapeHTML(prize.id)}" aria-label="Remove prize">X</button>
+        </div>`).join('') : '<p class="muted shop-empty">No prizes yet. Add one!</p>'}
+      <button class="px-btn small go new-prize" data-action="new-prize">+ NEW PRIZE</button>
+    </div>
+    ${feed ? `<h3 class="label day-label">STICK LOG</h3><div class="px-box session-list">${feed}</div>` : ''}`;
+}
+
+// --- Strava sync (see strava.js) ---
+
+let stravaWalks = []; // walks found by the last sync, waiting for the review sheet
+
+function openStravaSheet(message = '') {
+  const status = stravaStatus();
+  const setup = stravaSetup();
+  const setupForm = `
+    <form data-form="strava-setup" autocomplete="off">
+      <div class="group px-box">
+        <label class="field"><span>Client ID</span><input name="clientId" inputmode="numeric" placeholder="123456" value="${escapeHTML(setup.clientId)}" required></label>
+        <label class="field"><span>Worker URL</span><input name="proxy" inputmode="url" autocapitalize="off" placeholder="https://pawse-strava.you.workers.dev" value="${escapeHTML(setup.proxy)}" required></label>
+        <button class="px-btn small go" type="submit">SAVE</button>
+      </div>
+      <p class="tip">One-time setup (free). 1) At strava.com/settings/api make an app, with Authorization Callback Domain set to localhost (or your site's domain). Copy its Client ID. 2) At cloudflare.com make a Worker from tools/strava-worker/worker.js, add the three settings, and copy its URL. 3) Paste both here. Ask Abra for the step-by-step.</p>
+    </form>`;
+  const body = !status.configured
+    ? setupForm
+    : !status.connected
+      ? `<div class="group px-box"><button class="px-btn go" data-action="strava-connect">CONNECT STRAVA</button></div>
+         <p class="tip">Strava will ask you to allow Pawse to read your activities. You come straight back here.</p>
+         <button class="px-btn small" data-action="strava-edit-setup">EDIT SETUP</button>`
+      : `<div class="group px-box">
+           <p class="strava-status">${pixelImg(iconURL('star'), 16)} Connected${status.athlete ? ` as ${escapeHTML(status.athlete)}` : ''}</p>
+           <p class="muted strava-status">${status.lastSync ? `Last sync ${new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(status.lastSync)}` : 'Not synced yet. The first sync looks back 30 days.'}</p>
+           <button class="px-btn go" data-action="strava-sync" id="strava-sync">SYNC WALKS</button>
+         </div>
+         <button class="px-btn small" data-action="strava-disconnect">DISCONNECT</button>`;
+  openSheet(`
+    <div class="sheet-bar"><span></span><h2>STRAVA</h2><button type="button" class="px-btn tiny go" data-action="close-sheet">DONE</button></div>
+    ${message ? `<p class="tip strava-message">${escapeHTML(message)}</p>` : ''}
+    ${body}`);
+}
+
+const knownStravaIds = () => new Set(state.rewards.map((r) => r.stravaId).filter(Boolean));
+
+async function syncStrava() {
+  const button = document.getElementById('strava-sync');
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'CHECKING...';
+  }
+  try {
+    stravaWalks = await fetchStravaWalks(knownStravaIds());
+  } catch (error) {
+    openStravaSheet(`Couldn't reach Strava: ${error.message}`);
+    return;
+  }
+  if (!stravaWalks.length) {
+    finishStravaSync([]);
+    openStravaSheet('No new walks. You are all caught up!');
+    return;
+  }
+  openStravaReview();
+}
+
+function openStravaReview() {
+  const fallback = shopDog();
+  const dateFormat = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  const rows = stravaWalks.map((walk) => {
+    const named = dogsInTitle(walk.name, state.dogs);
+    const who = named.length === 1 ? named[0].id : named.length > 1 ? '*' : fallback.id;
+    const options = state.dogs.map((d) => `<option value="${escapeHTML(d.id)}" ${d.id === who ? 'selected' : ''}>${escapeHTML(d.name)}</option>`).join('');
+    return `
+      <div class="strava-row">
+        <label class="strava-pick">
+          <input type="checkbox" name="pick" value="${escapeHTML(walk.id)}" checked>
+          <span><span class="session-who">${escapeHTML(walk.name)}</span><span class="muted">${dateFormat.format(walk.at)} · ${walk.miles} mi · +${walkSticks(walk)}</span></span>
+        </label>
+        <select name="who-${escapeHTML(walk.id)}" aria-label="Who went">${options}${state.dogs.length > 1 ? `<option value="*" ${who === '*' ? 'selected' : ''}>Everyone</option>` : ''}</select>
+      </div>`;
+  }).join('');
+  openSheet(`
+    <form data-form="strava-review" autocomplete="off">
+      ${sheetBar('NEW WALKS')}
+      <div class="group px-box">${rows}</div>
+      <p class="tip">Untick anything that wasn't a dog walk. Unticked ones won't be offered again.</p>
+    </form>`);
+}
+
+async function submitStravaReview(form) {
+  const data = new FormData(form);
+  const picked = new Set(data.getAll('pick'));
+  const skipped = [];
+  for (const walk of stravaWalks) {
+    if (!picked.has(walk.id)) {
+      skipped.push(walk.id);
+      continue;
+    }
+    const who = String(data.get(`who-${walk.id}`));
+    const dogs = who === '*' ? state.dogs : [findDog(who)].filter(Boolean);
+    if (!dogs.length) continue;
+    await addReward({ id: newId(), type: 'walk', at: walk.at, dogIds: dogs.map((d) => d.id), dogNames: namesOf(dogs), miles: walk.miles, stravaId: walk.id });
+  }
+  finishStravaSync(skipped);
+  stravaWalks = [];
+  closeSheet();
+  playChime();
+  render();
+}
+
+/** If Strava just sent us back with ?code=..., finish connecting before the first screen is drawn. */
+async function handleStravaRedirect() {
+  if (!isStravaRedirect()) return '';
+  try {
+    await finishStravaLogin();
+    return 'Connected! Tap SYNC WALKS to bring in your recent walks.';
+  } catch (error) {
+    return error.message;
+  }
+}
+
+function dogPicker(name, selectedId) {
+  return `<select name="${name}">${state.dogs.map((d) => `<option value="${escapeHTML(d.id)}" ${d.id === selectedId ? 'selected' : ''}>${escapeHTML(d.name)}</option>`).join('')}</select>`;
+}
+
+function openWalkSheet() {
+  openSheet(`
+    <form data-form="walk" autocomplete="off">
+      ${sheetBar('WALK')}
+      <div class="group px-box">
+        ${state.dogs.map((d) => `
+          <label class="field"><span>${escapeHTML(d.name)}</span><input type="checkbox" name="dog" value="${escapeHTML(d.id)}" ${/teddy/i.test(d.name) || state.dogs.length === 1 ? 'checked' : ''}></label>`).join('')}
+        <label class="field"><span>Miles</span><input name="miles" inputmode="decimal" placeholder="0.8" required></label>
+        <label class="field"><span>Date</span><input type="date" name="date" max="${todayISO()}" value="${todayISO()}" required></label>
+      </div>
+      <p class="tip">Tick every pup who went. Each one earns ${RATES.perTenthMile} sticks per 0.1 mile.</p>
+    </form>`);
+}
+
+function openTrickSheet() {
+  openSheet(`
+    <form data-form="trick" autocomplete="off">
+      ${sheetBar('NEW TRICK')}
+      <div class="group px-box">
+        <label class="field"><span>Pup</span>${dogPicker('dog', state.dogs.find((d) => /teddy/i.test(d.name))?.id ?? state.dogs[0].id)}</label>
+        <label class="field"><span>Trick</span><input name="name" placeholder="Spin" maxlength="40" required></label>
+        <label class="field"><span>Date</span><input type="date" name="date" max="${todayISO()}" value="${todayISO()}" required></label>
+      </div>
+      <p class="tip">A brand-new trick is worth ${RATES.perTrick} sticks.</p>
+    </form>`);
+}
+
+async function addReward(reward) {
+  await saveReward(reward);
+  state.rewards = [reward, ...state.rewards.filter((r) => r.id !== reward.id)].sort((a, b) => b.at - a.at);
+}
+
+async function submitWalk(form) {
+  const data = new FormData(form);
+  const dogs = data.getAll('dog').map(findDog).filter(Boolean);
+  const miles = Math.round(parseFloat(String(data.get('miles')).replace(',', '.')) * 10) / 10;
+  if (!dogs.length) return alert('Tick at least one pup.');
+  if (!(miles > 0) || miles > 50) return alert('Enter the miles walked, like 0.8.');
+  await addReward({ id: newId(), type: 'walk', at: rewardTime(String(data.get('date'))), dogIds: dogs.map((d) => d.id), dogNames: namesOf(dogs), miles });
+  closeSheet();
+  playBlip(true);
+  render();
+}
+
+async function submitTrick(form) {
+  const data = new FormData(form);
+  const dog = findDog(String(data.get('dog')));
+  const name = String(data.get('name')).trim();
+  if (!dog || !name) return;
+  await addReward({ id: newId(), type: 'trick', at: rewardTime(String(data.get('date'))), dogIds: [dog.id], dogNames: [dog.name], name });
+  closeSheet();
+  playChime();
+  render();
+}
+
+function openPrizeSheet() {
+  openSheet(`
+    <form data-form="prize" autocomplete="off">
+      ${sheetBar('NEW PRIZE')}
+      <div class="group px-box">
+        <label class="field"><span>Prize</span><input name="name" placeholder="Spa day" maxlength="40" required></label>
+        <label class="field"><span>Sticks</span><input name="cost" inputmode="numeric" placeholder="500" required></label>
+      </div>
+      <p class="tip">What it costs in sticks. A minute of play is ${RATES.perMinute}, a 1 mile walk is ${RATES.perTenthMile * 10}, a new trick is ${RATES.perTrick}.</p>
+    </form>`);
+}
+
+async function submitPrize(form) {
+  const data = new FormData(form);
+  const name = String(data.get('name')).trim();
+  const cost = Math.round(parseFloat(String(data.get('cost')).replace(',', '.')));
+  if (!name) return;
+  if (!(cost > 0) || cost > 100000) return alert('Enter how many sticks it costs, like 500.');
+  const prize = { id: newId(), name, cost };
+  await savePrize(prize);
+  state.prizes = [...state.prizes, prize].sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name));
+  closeSheet();
+  playBlip(true);
+  render();
 }
 
 function backupBox() {
@@ -1129,7 +1431,7 @@ async function submitToy(form) {
 async function exportBackup() {
   const dogs = state.dogs.map(({ photoPixel, ...dog }) => dog); // pixel portraits are rebuilt on load
   const json = JSON.stringify(
-    { app: 'pawse', version: 4, exportedAt: new Date().toISOString(), dogs, sessions: state.sessions, weights: state.weights },
+    { app: 'pawse', version: 5, exportedAt: new Date().toISOString(), dogs, sessions: state.sessions, weights: state.weights, rewards: state.rewards, prizes: state.prizes },
     null,
     2
   );
@@ -1201,8 +1503,25 @@ async function importBackup(file) {
         return entry;
       });
 
-    if (!confirm(`Replace everything with this backup? (${dogs.length} dogs, ${sessions.length} play sessions, ${weights.length} weigh-in days)`)) return;
-    await replaceEverything(dogs, sessions, weights);
+    const rewards = (Array.isArray(parsed.rewards) ? parsed.rewards : [])
+      .filter((r) => ['walk', 'trick', 'redeem'].includes(r?.type) && Number(r.at) > 0)
+      .map((r) => {
+        const reward = { id: String(r.id ?? newId()), type: r.type, at: Number(r.at), dogIds: strings(r.dogIds), dogNames: strings(r.dogNames) };
+        if (r.type === 'walk') Object.assign(reward, { miles: Number(r.miles), ...(r.stravaId ? { stravaId: String(r.stravaId) } : {}) });
+        if (r.type === 'trick') reward.name = String(r.name ?? '');
+        if (r.type === 'redeem') Object.assign(reward, { prizeName: String(r.prizeName ?? ''), cost: Number(r.cost) });
+        return reward;
+      })
+      .filter((r) => (r.type !== 'walk' || r.miles > 0) && (r.type !== 'redeem' || r.cost >= 0));
+    // Backups from before the Prize Shop have no prize list: keep the current one.
+    const prizes = Array.isArray(parsed.prizes)
+      ? parsed.prizes
+        .filter((p) => typeof p?.name === 'string' && Number(p.cost) > 0)
+        .map((p) => ({ id: String(p.id ?? newId()), name: p.name, cost: Math.round(Number(p.cost)) }))
+      : undefined;
+
+    if (!confirm(`Replace everything with this backup? (${dogs.length} dogs, ${sessions.length} play sessions, ${weights.length} weigh-in days, ${rewards.length} walks/tricks/prizes)`)) return;
+    await replaceEverything(dogs, sessions, weights, rewards, prizes);
     await loadAll();
     render();
   } catch {
@@ -1234,9 +1553,23 @@ async function loadAll() {
   state.dogs = await loadDogs();
   state.sessions = await loadSessions();
   state.weights = await loadWeights();
+  state.rewards = await loadRewards();
+  state.prizes = await loadPrizes();
   await upgradeDogs();
   await addDefaultDogs();
   await addDefaultToys();
+  await addDefaultPrizes();
+}
+
+const DEFAULT_PRIZES_KEY = 'pawse.defaultPrizesAdded';
+
+/** First run with an empty Prize Shop: stock it with a few starter prizes. Only once, so deleting them sticks. */
+async function addDefaultPrizes() {
+  const firstTime = !localStorage.getItem(DEFAULT_PRIZES_KEY) && !state.prizes.length;
+  localStorage.setItem(DEFAULT_PRIZES_KEY, '1');
+  if (!firstTime) return;
+  for (const prize of DEFAULT_PRIZES) await savePrize(prize);
+  state.prizes = await loadPrizes();
 }
 
 /** First visit on a device with no dogs: add Teddy and Cookie. Only ever once, so deleting them sticks. */
@@ -1287,7 +1620,6 @@ const GYM_MESSAGES = [
 
 const avgOf = (list) => (list.length ? list.reduce((sum, v) => sum + v, 0) / list.length : null);
 const lb = (value) => `${value.toFixed(1)} lb`;
-const signedLb = (value) => `${value > 0 ? '+' : value < 0 ? '-' : '±'}${Math.abs(value).toFixed(1)} lb`;
 const shortDate = (iso) => new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(toDate(iso));
 
 /** Which dog is training: the one you picked, else Cookie, else a plump pup, else the first dog. */
@@ -1510,41 +1842,6 @@ function foodChart(stats) {
   return chartFrame(0, maxY, (v) => Math.round(v), bars + weeklyLine(stats.weeks, 'avgFood', 0, maxY));
 }
 
-function insightHTML(stats) {
-  const { link, pace } = stats;
-  const paceText = pace
-    ? pace.perWeek < -0.05
-      ? `Losing <b>${Math.abs(pace.perWeek).toFixed(2)} lb/week</b>${pace.percent === null ? '' : ` (${Math.abs(pace.percent).toFixed(1)}% of body weight)`} over the last ${pace.weeks} week${pace.weeks === 1 ? '' : 's'}.`
-      : pace.perWeek > 0.05
-        ? `Gaining <b>${pace.perWeek.toFixed(2)} lb/week</b> over the last ${pace.weeks} week${pace.weeks === 1 ? '' : 's'}.`
-        : `Holding steady over the last ${pace.weeks} week${pace.weeks === 1 ? '' : 's'}.`
-    : 'Log a couple of weeks of weigh-ins to see her pace.';
-
-  let linkText;
-  if (!link.ready) {
-    linkText = `To see how food and weight are linked, keep logging both: ${link.weeksNeeded} more week${link.weeksNeeded === 1 ? '' : 's'} needed (3 weeks with food and weight change).`;
-  } else {
-    const r = link.r.toFixed(2);
-    linkText = {
-      strong: `<b>Strong link</b> (r = ${r}): weeks she eats more, she gains more. Food is the lever.`,
-      some: `<b>Some link</b> (r = ${r}): food explains part of her weight change. Treats, exercise and water weight matter too.`,
-      none: `<b>No clear link yet</b> (r = ${r}). A few more weeks of logs will sharpen this.`,
-      opposite: `<b>Unexpected</b> (r = ${r}): weeks she ate more, she gained less. Usually something else is going on (treats, activity, weigh-in timing). Keep logging.`,
-    }[link.verdict];
-    if (link.verdict === 'strong' || link.verdict === 'some') {
-      linkText += `<br>Each extra 10 g/day ≈ <b>${signedLb(link.slopePer10g).replace(' lb', '')} lb/week</b>.`;
-      if (link.steadyFood !== null) {
-        linkText += `<br>About <b>${Math.round(link.steadyFood)} g/day</b> keeps her weight steady, so aim a little below that to lose.`;
-      }
-    }
-    linkText += `<br><span class="muted">Based on ${link.n} weeks. Estimates firm up with more data.</span>`;
-  }
-
-  return `
-    <p>${paceText} <span class="muted">Vets usually aim for about 1–2% of body weight per week. Check her goal with your vet.</span></p>
-    <p>${linkText}</p>`;
-}
-
 function renderGymStats() {
   const dog = gymDog();
   const header = `
@@ -1595,11 +1892,6 @@ function renderGymStats() {
       <h2 class="label">FOOD (G) · LAST 8 WEEKS</h2>
       ${foodChart(stats)}
       <p class="legend"><i class="sw bar"></i>daily food <i class="sw line"></i>weekly average</p>
-    </section>
-
-    <section class="px-box card insight">
-      <h2 class="label">FOOD VS. WEIGHT</h2>
-      ${insightHTML(stats)}
     </section>
 
     <section class="px-box card">
@@ -1793,6 +2085,57 @@ const actions = {
     closeSheet();
     render();
   },
+  'log-walk': () => state.dogs.length && openWalkSheet(),
+  'log-trick': () => state.dogs.length && openTrickSheet(),
+  'shop-pick': (el) => {
+    playBlip(true);
+    shopDogId = el.dataset.id;
+    render();
+  },
+  'new-prize': () => openPrizeSheet(),
+  'strava-open': () => openStravaSheet(),
+  'strava-connect': () => { location.href = stravaLoginURL(); },
+  'strava-sync': () => syncStrava(),
+  'strava-edit-setup': () => {
+    const setup = stravaSetup();
+    openSheet(`<div class="sheet-bar"><span></span><h2>STRAVA SETUP</h2><button type="button" class="px-btn tiny go" data-action="close-sheet">DONE</button></div>`);
+    document.querySelector('.sheet').insertAdjacentHTML('beforeend', `
+      <form data-form="strava-setup" autocomplete="off">
+        <div class="group px-box">
+          <label class="field"><span>Client ID</span><input name="clientId" inputmode="numeric" value="${escapeHTML(setup.clientId)}" required></label>
+          <label class="field"><span>Worker URL</span><input name="proxy" inputmode="url" autocapitalize="off" value="${escapeHTML(setup.proxy)}" required></label>
+          <button class="px-btn small go" type="submit">SAVE</button>
+        </div>
+      </form>`);
+  },
+  'strava-disconnect': async () => {
+    if (!confirm('Disconnect Strava? Walks you already imported stay.')) return;
+    await disconnectStrava();
+    openStravaSheet('Disconnected.');
+  },
+  redeem: async (el) => {
+    const dog = shopDog();
+    const prize = state.prizes.find((p) => p.id === el.dataset.id);
+    if (!dog || !prize) return;
+    if (stickTotals(dog.id, state.sessions, state.rewards).balance < prize.cost) return;
+    if (!confirm(`Spend ${prize.cost} sticks on "${prize.name}" for ${dog.name}?`)) return;
+    await addReward({ id: newId(), type: 'redeem', at: Date.now(), dogIds: [dog.id], dogNames: [dog.name], prizeName: prize.name, cost: prize.cost });
+    playChime();
+    render();
+  },
+  'delete-prize': async (el) => {
+    const prize = state.prizes.find((p) => p.id === el.dataset.id);
+    if (!prize || !confirm(`Remove "${prize.name}" from the shop?`)) return;
+    await deletePrize(prize.id);
+    state.prizes = state.prizes.filter((p) => p.id !== prize.id);
+    render();
+  },
+  'delete-reward': async (el) => {
+    if (!confirm('Delete this from the stick log? Her stick total will change.')) return;
+    await deleteReward(el.dataset.id);
+    state.rewards = state.rewards.filter((r) => r.id !== el.dataset.id);
+    render();
+  },
   'delete-session': async (el) => {
     if (!confirm('Delete this play session from your log?')) return;
     await deleteSession(el.dataset.id);
@@ -1875,6 +2218,16 @@ $overlay.addEventListener('submit', (event) => {
   if (form.dataset.form === 'dog') submitDog(form);
   if (form.dataset.form === 'toy') submitToy(form);
   if (form.dataset.form === 'weight') submitWeight(form);
+  if (form.dataset.form === 'walk') submitWalk(form);
+  if (form.dataset.form === 'trick') submitTrick(form);
+  if (form.dataset.form === 'prize') submitPrize(form);
+  if (form.dataset.form === 'strava-review') submitStravaReview(form);
+  if (form.dataset.form === 'strava-setup') {
+    const data = new FormData(form);
+    const problem = saveStravaSetup(data.get('clientId'), data.get('proxy'));
+    if (problem) alert(problem);
+    else openStravaSheet('Saved.');
+  }
 });
 
 document.addEventListener('keydown', (event) => {
@@ -1908,8 +2261,9 @@ function renderTabBar() {
   document.querySelector('.tabbar').innerHTML = `
     <a href="#/play" data-tab="play">${pixelImg(iconURL('paw'), 24)}<span>PLAY</span></a>
     <a href="#/gym" data-tab="gym">${pixelImg(iconURL('gym'), 24)}<span>GYM</span></a>
-    <a href="#/dogs" data-tab="dogs">${pixelImg(dogTileURL('golden'), 24)}<span>MY DOGS</span></a>
+    <a href="#/dogs" data-tab="dogs">${pixelImg(dogTileURL('golden'), 24)}<span>DOGS</span></a>
     <a href="#/toys" data-tab="toys">${pixelImg(iconURL('ball'), 24)}<span>TOYS</span></a>
+    <a href="#/shop" data-tab="shop">${pixelImg(iconURL('stick'), 24)}<span>SHOP</span></a>
     <a href="#/log" data-tab="log">${pixelImg(iconURL('log'), 24)}<span>LOG</span></a>`;
 }
 
@@ -1923,8 +2277,11 @@ async function init() {
   }
   navigator.storage?.persist?.();
 
+  const stravaMessage = await handleStravaRedirect();
+  if (stravaMessage) state.route = parseRoute();
   renderTabBar();
   render();
+  if (stravaMessage) openStravaSheet(stravaMessage);
   if (timer.tick()) onTimerFinished();
   else if (timer.phase === 'finished') showCelebration();
 

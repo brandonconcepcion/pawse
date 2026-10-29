@@ -5,6 +5,57 @@ Add an entry for every meaningful change (see `AGENTS.md` → "Keeping the docs 
 
 ---
 
+## 2026-10-29: Strava sync for walks (free)
+**Why:** The owner wanted walks to come from Strava instead of typing miles. It has to be free.
+**What:** New `js/strava.js` (setup/token storage, login URL, code→token exchange, refresh, fetch walks, skip list, disconnect) and
+`tools/strava-worker/worker.js`, a ~100-line Cloudflare Worker (free plan) that holds Strava's client secret and forwards `/token`,
+`/refresh`, `/deauthorize`, `/activities` (CORS-limited to `ALLOWED_ORIGINS` + localhost). `app.js`: a STRAVA button on the SHOP tab
+opens a sheet (setup → connect → sync); a review sheet picks which walks and which pup (by name in the title); imports become `walk`
+rewards with a `stravaId` (de-duplicated; unticked ones are remembered). `handleStravaRedirect()` in `init()` finishes the login.
+Backup import keeps `stravaId`. `sw.js` caches `strava.js`, `pawse-v54`. Setup guide: [10-strava.md](context/10-strava.md).
+**Verified:** the Worker in Node with `fetch` stubbed (origin checks, all routes, missing code/token, unconfigured → 500); the app
+against a mock Worker in an incognito browser: setup validation, simulated Strava redirect → connected, sync dropped a Ride and a 0.03 mi
+shuffle, review defaults (name match, "Everyone" for both names, else Teddy), import gave Teddy 126 / Cookie 90, a second sync found nothing
+new, an unticked walk was never re-offered, an expired token refreshed. **Not tested against real Strava** (needs the owner's accounts);
+and not on iOS (home-screen app vs Safari storage are separate; see risks in the doc). Test data deleted.
+
+---
+
+## 2026-10-29: The sticks screen is its own SHOP tab
+**Why:** The owner wanted the reward system as a dedicated "Shop" tab, not a card on the Log screen.
+**What:** New route `#/shop` and `renderShop()` (replaces `sticksSection()` and the Prize Shop sheet): STICKS card (tap a pup to pick who
+shops), prizes list with inline REDEEM / X, **+ NEW PRIZE** sheet, STICK LOG. The Log tab is back to play sessions only. The tab bar has six
+tabs now; **"MY DOGS" is labelled "DOGS"** so six fit a 320px phone. `.stick-row` is a button with an `.active` highlight. Cache `pawse-v53`.
+**Verified** (incognito, throwaway server): a 105-min shared session gave both pups 105; redeeming for Teddy left Cookie's balance alone;
+picking Cookie switched the prize header; adding a prize worked; the Log no longer shows the sticks card. Test data deleted.
+
+---
+
+## 2026-10-29: Sticks: a reward system for play, walks and tricks
+**Why:** The owner wanted Teddy to earn something for play time, walks and learning tricks, redeemable for prizes (a new
+toy, a spa day, treats). They chose a collectible *stick* over points: 1 per minute of play, 3 per 0.1 mile, 50 per new trick.
+**What:** New `js/sticks.js` (`RATES`, `DEFAULT_PRIZES`, `stickTotals()`). IndexedDB v4: `rewards` (walks, tricks, redemptions) and
+`prizes` stores; `db.js` loaders/savers and a wider `replaceEverything`. Backup version 5 (`rewards`, `prizes`; old backups still
+load, and one without prizes keeps the current shop). `app.js`: STICKS card + STICK LOG on the Log tab, walk/trick/prize-shop sheets,
+"+N sticks" on the celebration screen, `addDefaultPrizes()`. New `stick` and `gift` pixel icons in `pixel.js`. `styles.css`: "Sticks" block.
+`sw.js`: `sticks.js` cached, `pawse-v52`. Full details in [09-sticks.md](context/09-sticks.md).
+**Design choice:** earned sticks are *calculated* from the logs, never stored, so deleting a mistaken walk or session fixes the
+balance. Only redemptions are stored.
+**Verified** (incognito, throwaway server): a 15 min session + 0.8 mi walk + a trick = 89; a 0.4 mi walk then a 100-stick treat redeem left 1;
+adding and removing prizes; backup export/import round trip, and an old (v4) backup keeping the prizes. Nothing was seeded for visitors.
+**Gotcha:** a replace that targets `${list}\n ${backupBox()}` matches the My Dogs screen first: always anchor edits inside the function you mean.
+
+---
+
+## 2026-10-29: Removed the FOOD VS. WEIGHT section from gym stats
+**Why:** The owner didn't want it on the STATS screen.
+**What:** `renderGymStats()` no longer renders the "FOOD VS. WEIGHT" card (pace vs. the 1–2%/week guideline plus the food/weight
+link text). Deleted `insightHTML()`, the now-unused `signedLb` helper and the `.insight` CSS. Cache `pawse-v51`.
+**Notes:** The math is still in `js/gym.js` (`foodVsWeight()`, `recentPace()`, used by `gymStats()`), just unused by the UI. Bring the
+card back from git history (`insightHTML`) if it's wanted again.
+
+---
+
 ## 2026-10-28: Pochita tried, then removed
 **Why:** The owner asked for a Pochita (Chainsaw Man) plush, iterated on it (two eyes, a 45° sagittal blade, a tall U
 handle, a side view), then decided to get rid of it.

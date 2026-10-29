@@ -2,13 +2,15 @@
 
 All data is on the device. Nothing is sent anywhere.
 
-## IndexedDB (`js/db.js`): database `pawse`, `VERSION = 3`
+## IndexedDB (`js/db.js`): database `pawse`, `VERSION = 4`
 
 | Store | Key | Index | Record |
 |---|---|---|---|
 | `dogs` | `id` | (none) | a dog profile (below) |
 | `sessions` | `id` | `startedAt` | one play session |
 | `weights` | `id` = `${dogId}:${YYYY-MM-DD}` | `dogId` | one dog's weigh-in/food for one day |
+| `rewards` | `id` | (none) | a walk, a new trick, or a prize redemption (see [sticks](09-sticks.md)) |
+| `prizes` | `id` | (none) | a Prize Shop item `{ id, name, cost }` |
 
 ### Shapes
 
@@ -41,7 +43,8 @@ All go through `transact(storeNames, mode, work)`.
   `moveSessionsOutOfDogs` moves them to the `sessions` store, merging dogs that share a `startedAt` into one
   session, then deletes `dog.sessions`.
 - **v2 → v3:** added the `weights` store.
-- To add v4: bump `VERSION`, create stores/indexes if missing, transform data in the upgrade transaction
+- **v3 → v4:** added the `rewards` and `prizes` stores (sticks).
+- To add v5: bump `VERSION`, create stores/indexes if missing, transform data in the upgrade transaction
   (`request.transaction`), and update import/export below.
 - `db.onversionchange` closes the connection so another tab (or a delete) is never blocked.
 
@@ -56,14 +59,17 @@ regenerated from `photo`.
 | `pawse.minutes` | app.js | last chosen session length |
 | `pawse.muted` | sound.js | `'1'` when SFX are off |
 | `pawse.area` | (retired) | Old: which area the Play tab returned to. No longer read or written; may linger on old devices |
+| `pawse.defaultPrizesAdded` | app.js | set once the starter prizes were added (so deleting them sticks) |
+| `pawse.strava` | strava.js | Strava setup + login tokens (device only; never in backups) |
+| `pawse.stravaSkipped` | strava.js | ids of Strava activities the owner turned down |
 | `pawse.gymDog` | app.js | id of the gym buddy (default: dog named Cookie, else first Plump dog, else first dog) |
 | `pawse.installHintDismissed` | app.js | hides the Safari install hint |
 
 ## Backups (`app.js` → "Backup" section)
 
-- **Export** (`exportBackup`): JSON `{ app: 'pawse', version: 4, exportedAt, dogs, sessions, weights }`.
+- **Export** (`exportBackup`): JSON `{ app: 'pawse', version: 5, exportedAt, dogs, sessions, weights, rewards, prizes }`.
   `photoPixel` is stripped (rebuilt on load). Uses the share sheet when available, else a download.
-- **Import** (`importBackup`): accepts version 4, older files without `weights`, and v1 files where sessions are
+- **Import** (`importBackup`): accepts version 5, older files without `weights`/`rewards`/`prizes` (a missing `prizes` keeps the current shop), and v1 files where sessions are
   inside dogs (via `legacySessions`). Validates/cleans every field, confirms, then `replaceEverything`.
 - When you add a field or store, update both export and import, and bump the backup `version`.
 
