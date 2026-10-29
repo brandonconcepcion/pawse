@@ -36,6 +36,8 @@ Never put the client secret in the repo or in the app.
 - **Review sheet:** a tick box and a "who went" picker per walk (title containing a dog's name picks that pup, both names pick
   Everyone, else the shop's active pup). Ticked walks become `walk` rewards `{ ..., miles, stravaId }` (so sticks follow the
   usual 3 per 0.1 mile); unticked ones are remembered as skipped; `lastSync` then moves forward.
+  The sheet has a keyword box (default `dog`, remembered in `localStorage` `pawse.stravaKeyword`) and MATCHING / ALL / NONE buttons.
+  A walk starts ticked when its title has the keyword or a dog's name; an empty keyword ticks everything.
 - **DISCONNECT** forgets the tokens on the device and asks Strava to deauthorize. Imported walks stay.
 
 ## Testing without Strava

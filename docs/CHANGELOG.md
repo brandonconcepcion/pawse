@@ -5,6 +5,14 @@ Add an entry for every meaningful change (see `AGENTS.md` → "Keeping the docs 
 
 ---
 
+## 2026-10-29: Strava review sheet: keyword filter, tick all/none
+**Why:** Strava also holds runs, rides and other non-dog activities; the owner wanted to tick only dog walks automatically.
+**What:** `app.js` `openStravaReview()` now has a keyword box (default `dog`, saved as `pawse.stravaKeyword`) plus MATCHING / ALL / NONE
+buttons and an "N of M ticked" counter. Rows start ticked only if the title matches the keyword or contains a dog's name.
+Helpers: `matchesStravaKeyword`, `tickStravaWalks`, `countStravaTicks`; Enter in the keyword box re-filters instead of saving. `styles.css`
+`.strava-filter`; `sw.js` cache `pawse-v56`.
+**Notes:** Unticked walks are still remembered as skipped (never offered again), so NONE then SAVE skips the whole batch.
+
 ## 2026-10-29: Strava sync for walks (free)
 **Why:** The owner wanted walks to come from Strava instead of typing miles. It has to be free.
 **What:** New `js/strava.js` (setup/token storage, login URL, code→token exchange, refresh, fetch walks, skip list, disconnect) and

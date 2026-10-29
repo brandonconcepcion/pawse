@@ -956,6 +956,7 @@ async function syncStrava() {
 
 function openStravaReview() {
   const fallback = shopDog();
+  const keyword = localStorage.getItem(STRAVA_KEYWORD) ?? 'dog';
   const dateFormat = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   const rows = stravaWalks.map((walk) => {
     const named = dogsInTitle(walk.name, state.dogs);
@@ -964,7 +965,7 @@ function openStravaReview() {
     return `
       <div class="strava-row">
         <label class="strava-pick">
-          <input type="checkbox" name="pick" value="${escapeHTML(walk.id)}" checked>
+          <input type="checkbox" name="pick" value="${escapeHTML(walk.id)}" data-title="${escapeHTML(walk.name.toLowerCase())}" data-dog="${named.length ? 1 : ''}" ${matchesStravaKeyword(walk.name, named.length > 0, keyword) ? 'checked' : ''}>
           <span><span class="session-who">${escapeHTML(walk.name)}</span><span class="muted">${dateFormat.format(walk.at)} · ${walk.miles} mi · +${walkSticks(walk)}</span></span>
         </label>
         <select name="who-${escapeHTML(walk.id)}" aria-label="Who went">${options}${state.dogs.length > 1 ? `<option value="*" ${who === '*' ? 'selected' : ''}>Everyone</option>` : ''}</select>
@@ -973,9 +974,44 @@ function openStravaReview() {
   openSheet(`
     <form data-form="strava-review" autocomplete="off">
       ${sheetBar('NEW WALKS')}
+      <div class="group px-box">
+        <label class="field"><span>Tick walks whose title has</span><input name="keyword" type="search" autocapitalize="off" placeholder="dog" value="${escapeHTML(keyword)}"></label>
+        <div class="strava-filter">
+          <button type="button" class="px-btn tiny" data-action="strava-tick-matching">MATCHING</button>
+          <button type="button" class="px-btn tiny" data-action="strava-tick-all">ALL</button>
+          <button type="button" class="px-btn tiny" data-action="strava-tick-none">NONE</button>
+        </div>
+        <p class="muted" id="strava-count"></p>
+      </div>
       <div class="group px-box">${rows}</div>
-      <p class="tip">Untick anything that wasn't a dog walk. Unticked ones won't be offered again.</p>
+      <p class="tip">A walk also counts as a match if a dog's name is in its title. Untick anything that wasn't a dog walk. Unticked ones won't be offered again.</p>
     </form>`);
+  countStravaTicks();
+}
+
+const STRAVA_KEYWORD = 'pawse.stravaKeyword';
+
+/** An empty keyword matches everything; otherwise the title needs the word, or a dog's name. */
+const matchesStravaKeyword = (title, hasDogName, keyword) => {
+  const word = keyword.trim().toLowerCase();
+  return !word || hasDogName || title.toLowerCase().includes(word);
+};
+
+function tickStravaWalks(mode) {
+  const form = document.querySelector('[data-form="strava-review"]');
+  if (!form) return;
+  const keyword = form.elements.keyword.value;
+  localStorage.setItem(STRAVA_KEYWORD, keyword.trim());
+  for (const box of form.querySelectorAll('input[name="pick"]')) {
+    box.checked = mode === 'all' ? true : mode === 'none' ? false : matchesStravaKeyword(box.dataset.title, Boolean(box.dataset.dog), keyword);
+  }
+  countStravaTicks();
+}
+
+function countStravaTicks() {
+  const boxes = [...document.querySelectorAll('[data-form="strava-review"] input[name="pick"]')];
+  const label = document.getElementById('strava-count');
+  if (label) label.textContent = `${boxes.filter((b) => b.checked).length} of ${boxes.length} ticked`;
 }
 
 async function submitStravaReview(form) {
@@ -2096,6 +2132,9 @@ const actions = {
   'strava-open': () => openStravaSheet(),
   'strava-connect': () => { location.href = stravaLoginURL(); },
   'strava-sync': () => syncStrava(),
+  'strava-tick-matching': () => tickStravaWalks('matching'),
+  'strava-tick-all': () => tickStravaWalks('all'),
+  'strava-tick-none': () => tickStravaWalks('none'),
   'strava-edit-setup': () => {
     const setup = stravaSetup();
     openSheet(`<div class="sheet-bar"><span></span><h2>STRAVA SETUP</h2><button type="button" class="px-btn tiny go" data-action="close-sheet">DONE</button></div>`);
@@ -2205,12 +2244,23 @@ for (const root of [$view, $overlay]) {
       refreshToyPreview(input.form, input.name);
     } else if (input.name === 'date' && input.form?.dataset.form === 'weight') {
       prefillWeightLog(input.form);
+    } else if (input.name === 'keyword' && input.form?.dataset.form === 'strava-review') {
+      tickStravaWalks('matching');
+    } else if (input.name === 'pick') {
+      countStravaTicks();
     } else if (input.name === 'gym-dog') {
       localStorage.setItem('pawse.gymDog', input.value);
       render();
     }
   });
 }
+
+$overlay.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && event.target.name === 'keyword') {
+    event.preventDefault();
+    tickStravaWalks('matching');
+  }
+});
 
 $overlay.addEventListener('submit', (event) => {
   event.preventDefault();
