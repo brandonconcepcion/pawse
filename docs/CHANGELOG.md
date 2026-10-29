@@ -5,13 +5,13 @@ Add an entry for every meaningful change (see `AGENTS.md` → "Keeping the docs 
 
 ---
 
-## 2026-10-29: Strava review sheet: keyword filter, tick all/none
-**Why:** Strava also holds runs, rides and other non-dog activities; the owner wanted to tick only dog walks automatically.
-**What:** `app.js` `openStravaReview()` now has a keyword box (default `dog`, saved as `pawse.stravaKeyword`) plus MATCHING / ALL / NONE
-buttons and an "N of M ticked" counter. Rows start ticked only if the title matches the keyword or contains a dog's name.
-Helpers: `matchesStravaKeyword`, `tickStravaWalks`, `countStravaTicks`; Enter in the keyword box re-filters instead of saving. `styles.css`
-`.strava-filter`; `sw.js` cache `pawse-v56`.
-**Notes:** Unticked walks are still remembered as skipped (never offered again), so NONE then SAVE skips the whole batch.
+## 2026-10-29: Strava sync imports dog walks automatically
+**Why:** The owner didn't want a separate tick-box step; SYNC WALKS should filter and update by itself.
+**What:** Removed the review sheet. `app.js` `syncStrava()` keeps walks whose title has "dog" (any capitals) or a dog's name
+(`isDogWalk`, `dogsInTitle`), saves them as `walk` rewards with `stravaId`, and reports "Added N walks (+X sticks)" plus how many
+didn't mention a dog. Removed the `.strava-row`/`.strava-pick` CSS. `sw.js` cache `pawse-v57`.
+**Notes:** Non-matching walks are not marked skipped, so renaming one in Strava within a day of the last sync lets it come in later.
+A title with "dog" but no dog's name goes to whichever pup is selected on the SHOP tab.
 
 ## 2026-10-29: Strava sync for walks (free)
 **Why:** The owner wanted walks to come from Strava instead of typing miles. It has to be free.

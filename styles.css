@@ -418,13 +418,6 @@ body.immersive .play-bottom > * { pointer-events: auto; } /* ...except on the pa
 /* Strava sync */
 .strava-status { padding: 8px 12px 0; display: flex; align-items: center; gap: 8px; }
 .strava-message { color: var(--ink); background: var(--yellow); padding: 8px 10px; margin: 8px 4px; }
-.strava-row { padding: 8px 10px; border-bottom: 3px dotted rgba(29, 43, 83, 0.25); display: grid; gap: 6px; }
-.strava-row:last-child { border-bottom: 0; }
-.strava-pick { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-.strava-pick > span { display: grid; min-width: 0; }
-.strava-pick input { flex: none; width: 24px; height: 24px; accent-color: var(--forest); }
-.strava-row select { font-family: var(--text-font); font-size: 22px; margin-left: 34px; max-width: calc(100% - 34px); }
-.strava-filter { display: flex; gap: 6px; padding: 0 10px 6px; }
 .strava-btn { --face: #fc4c02; --shade: #b53600; --light: #ff9a6a; color: #fff; }
 
 /* ---------- Avatar ---------- */

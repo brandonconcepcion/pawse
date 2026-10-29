@@ -61,7 +61,7 @@ regenerated from `photo`.
 | `pawse.area` | (retired) | Old: which area the Play tab returned to. No longer read or written; may linger on old devices |
 | `pawse.defaultPrizesAdded` | app.js | set once the starter prizes were added (so deleting them sticks) |
 | `pawse.strava` | strava.js | Strava setup + login tokens (device only; never in backups) |
-| `pawse.stravaSkipped` | strava.js | ids of Strava activities the owner turned down |
+| `pawse.stravaSkipped` | strava.js | legacy: ids turned down in the old Strava review sheet (read, never written) |
 | `pawse.gymDog` | app.js | id of the gym buddy (default: dog named Cookie, else first Plump dog, else first dog) |
 | `pawse.installHintDismissed` | app.js | hides the Safari install hint |
 

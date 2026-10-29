@@ -27,17 +27,17 @@ Never put the client secret in the repo or in the app.
 
 ## What the app does
 - Setup + tokens live only on the device: localStorage `pawse.strava` `{ clientId, proxy, accessToken, refreshToken, expiresAt,
-  lastSync, athlete }`. Not in backups. `pawse.stravaSkipped` = activity ids the owner unticked (never offered again).
+  lastSync, athlete }`. Not in backups. `pawse.stravaSkipped` = legacy list of ids turned down in the old review sheet (still honored, no longer written).
 - Scope `activity:read_all` (so walks set to "Only Me" are included). Login redirect is `location.origin + location.pathname` with
   `state=pawse`; on load `handleStravaRedirect()` (app.js `init`) trades `?code` for tokens, tidies the URL to `#/shop`, and
   opens the STRAVA sheet.
 - **SYNC WALKS** (`fetchStravaWalks`): activities after the last sync (first sync: 30 days) of type Walk / Hike / Run, ≥ 0.1 mile
   (meters ÷ 1609.344, rounded to 0.1), up to 4 pages of 50. Anything already imported (`reward.stravaId`) or skipped is dropped.
-- **Review sheet:** a tick box and a "who went" picker per walk (title containing a dog's name picks that pup, both names pick
-  Everyone, else the shop's active pup). Ticked walks become `walk` rewards `{ ..., miles, stravaId }` (so sticks follow the
-  usual 3 per 0.1 mile); unticked ones are remembered as skipped; `lastSync` then moves forward.
-  The sheet has a keyword box (default `dog`, remembered in `localStorage` `pawse.stravaKeyword`) and MATCHING / ALL / NONE buttons.
-  A walk starts ticked when its title has the keyword or a dog's name; an empty keyword ticks everything.
+- **Automatic import** (`syncStrava`, no review sheet): a fetched walk is kept only if its title contains "dog" (case-insensitive) or
+  names one of the dogs (`dogsInTitle`). Named dogs go on the walk (both names = both pups); a "dog" title with no name goes to the
+  shop's active pup. Kept walks become `walk` rewards `{ ..., miles, stravaId }` (sticks follow the usual 3 per 0.1 mile); the rest
+  are ignored but NOT remembered, so a later sync can still catch them (window = last sync minus 24 h). The sheet then says how many
+  were added and how many didn't mention a dog. `lastSync` moves forward.
 - **DISCONNECT** forgets the tokens on the device and asks Strava to deauthorize. Imported walks stay.
 
 ## Testing without Strava
