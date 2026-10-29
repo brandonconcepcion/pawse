@@ -39,6 +39,7 @@ const TOY_KINDS = [
   { id: 'pup-light', label: 'Pup Light', icon: 'plush' },
   { id: 'blue-rubbin', label: 'Blue Rubbin', icon: 'plush' },
   { id: 'chuckit', label: 'Chuckit!', icon: 'ball' },
+  { id: 'giant-ball', label: 'Giant Tennis Ball', icon: 'ball' },
 ];
 
 function toyIcon(kind) {
@@ -131,6 +132,17 @@ const DEFAULT_TOYS = [
       color: 'blue',
       rating: 4,
       notes: 'Ball launcher and its orange ball, side by side. Takes two spots on the shelf.',
+    },
+  },
+  {
+    dog: 'teddy',
+    toy: {
+      id: 'default-giant-ball',
+      name: 'Giant Tennis Ball',
+      kind: 'giant-ball',
+      color: 'lime',
+      rating: 4,
+      notes: 'A comically huge inflatable tennis ball. Takes two spots on the shelf.',
     },
   },
 ];
@@ -1239,7 +1251,16 @@ async function addDefaultDogs() {
   }
 }
 
+// Default toys that were taken back out. A dog that already got one loses it on the next load.
+const RETIRED_DEFAULT_TOYS = ['default-pochita'];
+
 async function addDefaultToys() {
+  for (const dog of state.dogs) {
+    const kept = dog.toys.filter((t) => !RETIRED_DEFAULT_TOYS.includes(t.id));
+    if (kept.length === dog.toys.length) continue;
+    dog.toys = kept;
+    await saveDog(dog);
+  }
   for (const { dog: name, toy } of DEFAULT_TOYS) {
     const dog = state.dogs.find((d) => d.name.trim().toLowerCase() === name);
     if (!dog || dog.defaultToys?.includes(toy.id)) continue;

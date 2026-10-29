@@ -5,6 +5,29 @@ Add an entry for every meaningful change (see `AGENTS.md` → "Keeping the docs 
 
 ---
 
+## 2026-10-28: Pochita tried, then removed
+**Why:** The owner asked for a Pochita (Chainsaw Man) plush, iterated on it (two eyes, a 45° sagittal blade, a tall U
+handle, a side view), then decided to get rid of it.
+**What:** The `pochita` model, its `pumpkin`/`steel`/`charcoal` ramps, its `TOY_KINDS` entry and its Teddy default are
+gone. New `RETIRED_DEFAULT_TOYS` in `app.js` (`['default-pochita']`): `addDefaultToys()` removes those toys from any
+dog that already got them (the owner's localhost Teddy did, and the wall is display-only). Cache is `pawse-v50`.
+**Notes:** Lessons for the next character toy: the light comes from the upper left, so a face turned right falls into
+shade. Face-on, a blade pointing forward is edge-on or foreshortened. On an egg-shaped body the far eye hides behind the
+curve (give the head its own sphere). And a handle needs ~5 units of gap under its grip before the background shows
+through at the ~29° camera pitch.
+
+---
+
+## 2026-10-28: Giant Tennis Ball
+**Why:** The owner wanted a comically large tennis ball (the inflatable kind a golden retriever rests his chin on) on the shelf.
+**What:** `toys.js`: new `giant-ball` model (`span: 2`, radius 12.6 vs the normal ball's 7.5, felt fuzz, the seam's
+S-curve facing you) with `DEFAULT_COLOR` lime. `app.js`: `TOY_KINDS` entry (ball icon) and a Teddy default
+(`default-giant-ball`, rated 4). Cache is `pawse-v45`.
+**Notes:** On a 2-slot sprite the floor is row 33; a ball's top lands near row 33 − 1.875·r, so r ≈ 13 is the most that
+stays below the 8 padding rows (it would poke into the shelf above otherwise).
+
+---
+
 ## 2026-10-28: Chuckit! lies down across two slots
 **Why:** Standing up in one slot, the launcher had to be squashed and the owner wanted to see the whole thing.
 **What:** `chuckit` is now `span: 2` (64×48 sprite). The launcher lies on its side at full length: the cup faces you, the handle

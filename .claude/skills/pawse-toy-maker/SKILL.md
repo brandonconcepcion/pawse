@@ -142,7 +142,8 @@ In `js/app.js` → `DEFAULT_TOYS`, add an entry (dog name in lowercase, a **fixe
 How it works: `addDefaultToys()` runs after every load and backup restore. It adds the toy to the dog (matched by
 name, case-insensitive) **once**, then records the id in `dog.defaultToys`, so if the owner deletes the toy it stays
 deleted. Use the right dog (Teddy or Cookie). Pick a sensible rating (1–5 bones) and a short, factual note.
-**Don't add defaults the owner didn't ask for.**
+**Don't add defaults the owner didn't ask for.** To remove a default later, delete its `DEFAULT_TOYS` entry (and model) and add its id to
+`RETIRED_DEFAULT_TOYS` in `app.js`, so dogs that already got it lose it too.
 
 ### 6. Verify in the real app (incognito only)
 ```text

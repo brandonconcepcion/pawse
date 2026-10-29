@@ -547,6 +547,17 @@ export const MODELS = {
       cuts: [ellipsoid(22.6, 2.9, 0, 2.6, 1, 2, plastic)], // the slot in the grip
     };
   },
+
+  // A comically giant tennis ball (an inflatable one, big enough for a golden retriever to rest his chin on): fuzzy
+  // yellow-green felt with the white seam, so big it takes two shelf slots. Same seam as the normal `ball`.
+  'giant-ball': (color) => {
+    const r = 12.6;
+    const seam = (x, y, z) => {
+      const ny = (y - r) / r;
+      return Math.abs(ny - 0.55 * Math.cos(2 * Math.atan2(z, x) + 3.6)) < 0.11 ? 'white' : color; // the S-curve faces you
+    };
+    return { span: 2, parts: [fuzzy(sphere(0, r, 0, r, seam), 0.12)] };
+  },
 };
 
 export const DEFAULT_COLOR = {
@@ -554,6 +565,7 @@ export const DEFAULT_COLOR = {
   chew: 'tan', frisbee: 'orange', puzzle: 'red', other: 'pink',
   'sweater-bear': 'red', 'nacho-chip': 'orange', dogquila: 'gray', 'lamb-chop': 'white', 'pup-light': 'blue',
   'blue-rubbin': 'white', chuckit: 'blue',
+  'giant-ball': 'lime',
 };
 
 /** The model and color a saved toy uses. */

@@ -52,6 +52,7 @@ automatically.
 | `pup-light` | Nestpark's "Pup Light" plush beer can (a Bud Light parody): royal blue (new non-pickable `royal` ramp, used when `color` is the default blue) with a lighter top band, a dark diamond crest with a white paw, white blocks for the PUP LIGHT lettering over two white lines, gray rims. Printed on the back too. Smooth (no `fuzzy`) so the print stays crisp. | Teddy (`default-pup-light`) |
 | `blue-rubbin` | Nestpark's "Pups Blue Rubbin" plush beer can (a Pabst Blue Ribbon parody): the Pup Light's can shape in white, with a red sash winding around it, a big `royal` circle with a white "Pups" and paw pad, the BLUE RUBBIN banner sticking out either side, two bones, a dotted wreath, a thin red line near the bottom, gray rims. Lettering is dashed white rows (one pixel letter, one gap), staggered between rows so it doesn't form columns. | Teddy (`default-blue-rubbin`) |
 | `chuckit` | Chuckit! ball launcher and its ball as two separate pieces, `span: 2` so the launcher shows at full length. The launcher lies on its side (deep `royal` blue by default, `color` recolors it): the cup open toward you, a handle curving down to the shelf, and a flat grip on its edge with a slot (a `cuts` ellipsoid). The ball sits at the left end: red-orange (`flame` ramp) with a light blue seam (`aqua`) and a white logo patch. | Teddy (`default-chuckit`) |
+| `giant-ball` | A comically giant inflatable tennis ball: the normal `ball`'s seam on a radius-12.6 sphere (vs 7.5), lightly `fuzzy` felt (0.12; more turned to noise), the S-curve of the seam turned to face you (phase +3.6). `span: 2`: it fills columns 18–45 and rows 8–35 of the 64×48 sprite, so it stays inside its slots instead of poking into the shelf above. | Teddy (`default-giant-ball`) |
 
 ### Big toys that take two shelf slots (`span: 2`)
 A model can return `span: 2`. `spriteSize(model)` then makes its sprite 64×48 instead of 32×32: twice as wide, plus
@@ -74,6 +75,8 @@ no random tilt, so it lies straight along the shelf. The preview tool handles wi
    If the owner wants it already on a dog's shelf, add it to `DEFAULT_TOYS` in `app.js` (dog name + toy with a fixed
    id). `addDefaultToys()` runs after every load or backup restore. It adds the toy once, then records the id in
    `dog.defaultToys`, so if the owner deletes the toy it stays deleted.
+   To take a default back out, delete its entry and add its id to `RETIRED_DEFAULT_TOYS`; `addDefaultToys()` then removes
+   it from any dog that already got it (the wall is display-only, so the owner can't delete it themselves).
 3. Check it from all angles. Fastest: in Node, `rasterize` a copy of `toys.js` (append
    `export { rasterize, MODELS }`) and write the frames to a PNG with Pillow. Or render `toySpriteURL` frames onto a
    canvas in the page.
