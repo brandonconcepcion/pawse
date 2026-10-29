@@ -11,7 +11,7 @@ Add an entry for every meaningful change (see `AGENTS.md` → "Keeping the docs 
 (`isDogWalk`, `dogsInTitle`), saves them as `walk` rewards with `stravaId`, and reports "Added N walks (+X sticks)" plus how many
 didn't mention a dog. Removed the `.strava-row`/`.strava-pick` CSS. `sw.js` cache `pawse-v57`.
 **Notes:** Non-matching walks are not marked skipped, so renaming one in Strava within a day of the last sync lets it come in later.
-A title with "dog" but no dog's name goes to whichever pup is selected on the SHOP tab.
+Every imported walk is credited to all dogs (owner's choice: walks are for the whole pack), so each pup earns the sticks.
 
 ## 2026-10-29: Strava sync for walks (free)
 **Why:** The owner wanted walks to come from Strava instead of typing miles. It has to be free.

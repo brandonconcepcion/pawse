@@ -932,7 +932,7 @@ function openStravaSheet(message = '') {
 
 const knownStravaIds = () => new Set(state.rewards.map((r) => r.stravaId).filter(Boolean));
 
-/** A walk counts when its title says "dog" (any capitals) or names one of the dogs, e.g. "Walk with Teddy". */
+/** A walk counts when its title says "dog" (any capitals) or names one of the dogs, e.g. "Walk with Teddy". Every dog gets the credit. */
 const isDogWalk = (walk) => /dog/i.test(walk.name) || dogsInTitle(walk.name, state.dogs).length > 0;
 
 async function syncStrava() {
@@ -948,15 +948,12 @@ async function syncStrava() {
     openStravaSheet(`Couldn't reach Strava: ${error.message}`);
     return;
   }
-  const fallback = shopDog();
   const walks = found.filter(isDogWalk);
   let sticks = 0;
   for (const walk of walks) {
-    const named = dogsInTitle(walk.name, state.dogs);
-    const dogs = named.length ? named : [fallback].filter(Boolean);
-    if (!dogs.length) continue;
+    if (!state.dogs.length) break;
     sticks += walkSticks(walk);
-    await addReward({ id: newId(), type: 'walk', at: walk.at, dogIds: dogs.map((d) => d.id), dogNames: namesOf(dogs), miles: walk.miles, stravaId: walk.id });
+    await addReward({ id: newId(), type: 'walk', at: walk.at, dogIds: state.dogs.map((d) => d.id), dogNames: namesOf(state.dogs), miles: walk.miles, stravaId: walk.id });
   }
   finishStravaSync([]);
   const left = found.length - walks.length;

@@ -34,8 +34,7 @@ Never put the client secret in the repo or in the app.
 - **SYNC WALKS** (`fetchStravaWalks`): activities after the last sync (first sync: 30 days) of type Walk / Hike / Run, ≥ 0.1 mile
   (meters ÷ 1609.344, rounded to 0.1), up to 4 pages of 50. Anything already imported (`reward.stravaId`) or skipped is dropped.
 - **Automatic import** (`syncStrava`, no review sheet): a fetched walk is kept only if its title contains "dog" (case-insensitive) or
-  names one of the dogs (`dogsInTitle`). Named dogs go on the walk (both names = both pups); a "dog" title with no name goes to the
-  shop's active pup. Kept walks become `walk` rewards `{ ..., miles, stravaId }` (sticks follow the usual 3 per 0.1 mile); the rest
+  names one of the dogs (`dogsInTitle`). Every kept walk is credited to ALL dogs (`dogIds` = everyone). Kept walks become `walk` rewards `{ ..., miles, stravaId }` (sticks follow the usual 3 per 0.1 mile); the rest
   are ignored but NOT remembered, so a later sync can still catch them (window = last sync minus 24 h). The sheet then says how many
   were added and how many didn't mention a dog. `lastSync` moves forward.
 - **DISCONNECT** forgets the tokens on the device and asks Strava to deauthorize. Imported walks stay.
